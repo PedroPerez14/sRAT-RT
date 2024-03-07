@@ -10,24 +10,48 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/cmmw/imgui-glfw-glad-glm.git
 )
 
-FetchContent_Declare(assimp
-GIT_REPOSITORY https://github.com/assimp/assimp.git
-GIT_TAG master)
+FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY https://github.com/assimp/assimp.git
+        GIT_TAG master
+)
 
-FetchContent_MakeAvailable(imgui-glfw-glad-glm assimp)
+FetchContent_MakeAvailable(
+        imgui-glfw-glad-glm 
+        assimp
+)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 
-add_executable(sRAT-RT src/main.cpp)
+add_executable(sRAT-RT 
 
-target_include_directories(sRAT-RT PRIVATE libs/assimp-src/include)
+        # Header files
+        src/include/sRAT-RT/camera.h
+        src/include/sRAT-RT/shader.h
+        src/include/sRAT-RT/stb_image.h
+
+        # Source files
+        src/include/sRAT-RT/stb_image.cpp
+        src/main.cpp
+)
+
+include_directories(
+        #sRAT-RT include files
+        src/include
+)
+
+target_include_directories(
+        sRAT-RT PRIVATE libs/assimp-src/include
+)
 
 target_link_libraries(
         sRAT-RT
 	assimp
         imgui
+        glfw
+        glad
         glm
 )

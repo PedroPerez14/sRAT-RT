@@ -32,9 +32,13 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/camera.h
         src/include/sRAT-RT/shader.h
         src/include/sRAT-RT/stb_image.h
+        src/include/sRAT-RT/mesh.h
+        src/include/sRAT-RT/model.h
 
         # Source files
         src/include/sRAT-RT/stb_image.cpp
+        src/mesh.cpp
+        src/model.cpp
         src/main.cpp
 )
 

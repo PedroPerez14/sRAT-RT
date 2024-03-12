@@ -4,23 +4,23 @@
 #include <string>
 #include <unordered_map>
 
-enum colorspace{ ACES_2065_1, PROPHOTORGB, REC2020, SRGB};
+enum colorspace{ ACES2065_1, PROPHOTORGB, REC2020, SRGB};
 
 // Maintainability hell (I couldn't come up with something better in the 30 secs I pondered this)
 static const std::string colorspace_translations[] = 
 {
-"ACES_2065_1", 
-"PROPHOTORGB", 
-"REC2020", 
-"SRGB"
+"aces2065_1", 
+"prophotorgb", 
+"rec2020", 
+"sRGB"
 };
 
 static const std::unordered_map<std::string, colorspace> colorspace_translations_inv = 
 { 
-    {"ACES_2065_1", ACES_2065_1},
-    {"PROPHOTORGB", PROPHOTORGB},
-    {"REC2020", REC2020},
-    {"SRGB", SRGB},
+    {"aces2065_1", ACES2065_1},
+    {"prophotorgb", PROPHOTORGB},
+    {"rec2020", REC2020},
+    {"sRGB", SRGB},
 };
 
 // TODO: Add here more data like colorspace conversion tables and such?

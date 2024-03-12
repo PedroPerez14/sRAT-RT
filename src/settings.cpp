@@ -104,6 +104,9 @@ bool Settings::save_settings(const std::string& config_file)
     return success;
 }
 
+
+// Getters
+
 std::string Settings::get_path_LUTs() const
 {
     return path_LUTs_uplifting;
@@ -139,7 +142,22 @@ unsigned int Settings::get_window_height() const
     return window_height;
 }
 
+float Settings::get_wl_min() const
+{
+    return wl_min;
+}
 
+float Settings::get_wl_max() const
+{
+    return wl_max;
+}
+
+std::string Settings::get_window_name() const
+{
+    return window_name;
+}
+
+// Setters
 
 void Settings::set_path_LUTs(std::string path)
 {
@@ -176,8 +194,23 @@ void Settings::set_window_height(unsigned int h)
     window_height = h;
 }
 
+void Settings::set_wl_min(float wlmin)
+{
+    wl_min = wlmin;
+}
+
+void Settings::set_wl_max(float wlmax)
+{
+    wl_max = wlmax;
+}
+
+void Settings::set_window_name(std::string winname)
+{
+    window_name = winname;
+}
 
 
+// To String
 std::string Settings::to_string()
 {
     std::string settings_str = "SETTINGS_INFO: \n[\n\tpath_LUTs: " + path_LUTs_uplifting
@@ -187,6 +220,9 @@ std::string Settings::to_string()
                 + "\n\tnum_wavelengths: " + std::to_string(num_wavelengths);
                 + "\n\twindow_width: " + std::to_string(window_width);
                 + "\n\twindow_height: " + std::to_string(window_height);
+                + "\n\twl_min: " + std::to_string(wl_min);
+                + "\n\twl_max: " + std::to_string(wl_max);
+                + "\n\twindow_name: " + window_name;
                 + "\n]";
     return settings_str;
 }

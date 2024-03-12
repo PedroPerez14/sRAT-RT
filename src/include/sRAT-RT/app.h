@@ -2,6 +2,12 @@
 #define APP_CLASS_H
 
 #include <sRAT-RT/settings.h>
+#include <sRAT-RT/colorspace.h>
+
+#define GLFW_INCLUDE_NONE
+
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
 
 class App
 {
@@ -9,18 +15,29 @@ class App
 private:
     Settings* settings;         // Create settings here
     Scene* scene;
-    
+    std::unordered_map<colorspace, RGB2Spec*>* look_up_tables;
     // change this to glfwwindow or however it is written lmao
-    Window* window;
+    GLFWwindow* window;
+    struct Mouse_data
+    {
+        float lastX = 400;
+        float lastY = 300;
+        bool firstMouse = true;
+    } mouse_data;
 
-    //TODO: Any reference to the LUT3D tables here???
+    void load_luts(const std::string& dir, const std::string& ext);
+
 
 public:
     App();
-    App(std::string settings);
+    App(std::string path_settings);
 
-    Run();
-    //TODO: More stuff, add it when I come back for lunch
-}
+    bool init();                        // Configure GLAD, callbacks,etc. before running
+    void run();                         // This method will have the render loop, like our old main functions
+
+    void framebuffer_size_callback(GLFWwindow* window, int width, int height) const;
+    void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) const;
+    void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+};
 
 #endif

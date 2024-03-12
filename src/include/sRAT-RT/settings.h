@@ -15,6 +15,9 @@ private:
     unsigned int num_wavelengths;                       // Works best with multiples of 4
     unsigned int window_width;
     unsigned int window_height;
+    float wl_min;
+    float wl_max;
+    std::string window_name;
 
     void set_defaults();
 
@@ -32,6 +35,9 @@ public:
     unsigned int get_num_wavelengths() const;
     unsigned int get_window_width() const;
     unsigned int get_window_height() const;
+    float get_wl_min() const;
+    float get_wl_max() const;
+    std::string get_window_name() const;
 
     void set_path_LUTs(std::string path);
     void set_file_extension_LUTs(std::string ext);
@@ -40,6 +46,9 @@ public:
     void set_num_wavelengths(unsigned int wls);
     void set_window_width(unsigned int w);
     void set_window_height(unsigned int h);
+    void set_wl_min(float wlmin);
+    void set_wl_max(float wlmax);
+    void set_window_name(std::string winname);
 
     std::string to_string();
 };

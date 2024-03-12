@@ -1,6 +1,6 @@
 #include <string>
 #include <iostream>
-#include <sRAT-RT/settings.h>
+#include <sRAT-RT/app.h>
 
 struct Arguments
 {
@@ -34,8 +34,19 @@ int main(int argc, char* argv[])
 	}
 
 	//TODO: Add more parameters for the constructor of the settings
-	App app* = new App(args.settings_file);
-	app.Run();
+	App* app = new App(args.settings_file);
+
+	bool init_success = app->init();
 	
+	if(init_success)
+	{
+		app->run();
+	}
+	else
+	{
+		// TODO: Error message? (or did I already print something?)
+		return 1;
+	}
+		
 	return 0;
 }

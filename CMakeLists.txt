@@ -37,6 +37,7 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/model.h
         src/include/sRAT-RT/colorspace.h
         src/include/sRAT-RT/settings.h
+        src/include/sRAT-RT/input.h
         src/include/sRAT-RT/app.h
 
         # Source files

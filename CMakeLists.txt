@@ -29,16 +29,22 @@ set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 add_executable(sRAT-RT 
 
         # Header files
+        src/include/mINI/mINI.h
         src/include/sRAT-RT/camera.h
         src/include/sRAT-RT/shader.h
         src/include/sRAT-RT/stb_image.h
         src/include/sRAT-RT/mesh.h
         src/include/sRAT-RT/model.h
+        src/include/sRAT-RT/colorspace.h
+        src/include/sRAT-RT/settings.h
+        src/include/sRAT-RT/app.h
 
         # Source files
         src/include/sRAT-RT/stb_image.cpp
         src/mesh.cpp
         src/model.cpp
+        src/settings.cpp
+        src/app.cpp
         src/main.cpp
 )
 

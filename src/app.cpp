@@ -1,3 +1,4 @@
+#include <string>
 #include <iostream>
 #include <sRAT-RT/app.h>
 #include <sRAT-RT/input.h>
@@ -32,7 +33,7 @@ void App::framebuffer_size_callback(GLFWwindow* window, int width, int height) c
 
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset) const
 {
-    scene->camera->ProcessMouseScroll(yoffset);
+    scene->get_camera()->ProcessMouseScroll(yoffset);
 }
 
 void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -49,7 +50,7 @@ void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
     mouse_data.lastX = xpos;
     mouse_data.lastY = ypos;
 
-    scene->camera->ProcessMouseMovement(xoffset, yoffset, false);
+    scene->get_camera()->ProcessMouseMovement(xoffset, yoffset, false);
 }
 
 // Class functions and methods
@@ -73,7 +74,8 @@ App::App(std::string path_settings)
     scene = new Scene(settings->get_scene());
 
     // Load the uplifting Look Up Tables
-    look_up_tables = load_luts(settings->get_path_LUTs(), settings->get_file_extension_LUTs());
+    look_up_tables = new std::unordered_map<colorspace, RGB2Spec*>();
+    load_luts(settings->get_path_LUTs(), settings->get_file_extension_LUTs());
     
     // And finally, initialize GLFW and create the window (cannot be done before the initialization)
     window = init_glfw_and_create_window(settings->get_window_width(), 
@@ -82,9 +84,27 @@ App::App(std::string path_settings)
         exit(1);        // Can this be recovered somehow instead of killing everything?
 }
 
-void App::load_luts(const std::string& dir, const std::string& ext)
+App::~App()
 {
-    // TODO: Do stuff here once you've added RGB2Spec
+    for (auto& it: (*look_up_tables))
+    {
+        rgb2spec_free(it.second);
+        it.second = nullptr;
+    }
+    free(look_up_tables);
+}
+
+void App::load_luts(const std::string& dir, const std::string& ext)
+{   
+    // God forgive me for this awful way to do this
+    for(std::string colorspace_key : colorspace_translations)
+    {
+        colorspace colorspace_value = colorspace_translations_inv.at(colorspace_key);
+        const char* full_path = (dir + colorspace_key + ext).c_str();
+        RGB2Spec* pointer = rgb2spec_load(full_path);
+        (*look_up_tables)[colorspace_value] = pointer;
+        std::cout << "APP::STATUS::INIT::LOADING_LUTS::LOADED: Loaded LUT " << full_path << std::endl;
+    }
 }
 
 // Configure GLAD, callbacks and such, before going into the rendering loop in run()
@@ -117,15 +137,17 @@ bool App::init()
 
 	// Register Scroll zoom callback
 	glfwSetScrollCallback(window, handle_mouse_scroll);
+    return true;
 }
 
 // This one will be our main rendering loop
 void App::run()
 {
     /// TODO:
-    // 1.- Add rgb2spec
-    // 2.- load_luts in sRAT-RT
+    // 1.- Add rgb2spec             [DONE]
+    // 2.- load_luts in sRAT-RT     [DONE]
     // 3.- Class Scene (see Néstor's reference code) (and defining a scene + materials format :) )
-    // 4.- Finish this method :)
-    // 5.- See if I need to activate anything else in init(), i.e my own framebuffer (?)
+    // 4.- Finish this run() method :)
+    // 5.- See if I need to activate anything else in init(), i.e my own framebuffer (See Néstor's gist for the framebuffer)
+    // 6.- I forgor
 }

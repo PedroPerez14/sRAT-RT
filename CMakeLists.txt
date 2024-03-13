@@ -26,10 +26,17 @@ set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 
+add_compile_definitions(
+__SSE4_2__ 
+__AVX__ 
+__AVX512F__
+)
+
 add_executable(sRAT-RT 
 
         # Header files
         src/include/mINI/mINI.h
+        src/include/rgb2spec/rgb2spec.h
         src/include/sRAT-RT/camera.h
         src/include/sRAT-RT/shader.h
         src/include/sRAT-RT/stb_image.h
@@ -39,13 +46,16 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/settings.h
         src/include/sRAT-RT/input.h
         src/include/sRAT-RT/app.h
+        src/include/sRAT-RT/scene.h
 
         # Source files
+        src/include/rgb2spec/rgb2spec.c
         src/include/sRAT-RT/stb_image.cpp
         src/mesh.cpp
         src/model.cpp
         src/settings.cpp
         src/app.cpp
+        src/scene.cpp
         src/main.cpp
 )
 

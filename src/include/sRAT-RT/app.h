@@ -1,7 +1,9 @@
 #ifndef APP_CLASS_H
 #define APP_CLASS_H
 
+#include <sRAT-RT/scene.h>
 #include <sRAT-RT/settings.h>
+#include <rgb2spec/rgb2spec.h>
 #include <sRAT-RT/colorspace.h>
 
 #define GLFW_INCLUDE_NONE
@@ -31,6 +33,7 @@ private:
 public:
     App();
     App(std::string path_settings);
+    ~App();
 
     bool init();                        // Configure GLAD, callbacks,etc. before running
     void run();                         // This method will have the render loop, like our old main functions

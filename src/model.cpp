@@ -43,6 +43,11 @@ unsigned int TextureFromFile(const char* path, const std::string& directory)
     return textureID;
 }
 
+Model::Model()
+{
+
+}
+
 void Model::Draw(Shader& shader)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
@@ -51,7 +56,7 @@ void Model::Draw(Shader& shader)
     }
 }
 
-void Model::loadModel(const std::string& path)
+bool Model::loadModel(const std::string& path)
 {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -60,14 +65,14 @@ void Model::loadModel(const std::string& path)
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
-        return;
+        return false;
     }
     directory = path.substr(0, path.find_last_of('/'));
 
-    processNode(scene->mRootNode, scene);       // Start recursive processing of nodes
+    return processNode(scene->mRootNode, scene);       // Start recursive processing of nodes
 }
 
-void Model::processNode(aiNode* node, const aiScene *scene)
+bool Model::processNode(aiNode* node, const aiScene *scene)
 {
     // First process all the nodes
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
@@ -76,12 +81,14 @@ void Model::processNode(aiNode* node, const aiScene *scene)
         meshes.push_back(processMesh(mesh, scene));
     }
 
+    bool success = true;
     // Then process all of its children, making this method recursive
     for(unsigned int i = 0; i < node->mNumChildren; i++)
     {
         aiNode* child = node->mChildren[i];
-        processNode(child, scene);
+        success = (success && processNode(child, scene));
     }
+    return success;
 }
 
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)

@@ -16,8 +16,7 @@ private:
 public:
     Scene();
     Scene(const std::string& scene_file_path);
-
-
+    
     Camera* get_camera();
 
     /// TODO: std::to_string();

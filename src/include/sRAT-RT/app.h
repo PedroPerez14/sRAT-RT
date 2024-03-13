@@ -13,7 +13,7 @@
 
 class App
 {
-    
+
 private:
     Settings* settings;         // Create settings here
     Scene* scene;

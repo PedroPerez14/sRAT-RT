@@ -5,11 +5,14 @@
 #include <sRAT-RT/settings.h>
 #include <rgb2spec/rgb2spec.h>
 #include <sRAT-RT/colorspace.h>
+#include <sRAT-RT/framebuffer.h>
 
 #define GLFW_INCLUDE_NONE
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+
+#define FRAMEBUFFER_TEX_NUM 5   /// CHANGE THIS LATER, ONCE I KNOW HOW TO DO SHIT!
 
 class App
 {
@@ -20,6 +23,10 @@ private:
     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables;
     // change this to glfwwindow or however it is written lmao
     GLFWwindow* window;
+
+    /// TODO: I don't know how to declare this framebuffer
+    //      For now I'm using rgba and 5 textures, CHANGE LATER IF NEEDED!
+    GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* gl_deferred_framebuffer;
     struct Mouse_data
     {
         float lastX = 400;

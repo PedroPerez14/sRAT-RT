@@ -69,7 +69,21 @@ bool Model::loadModel(const std::string& path)
     }
     directory = path.substr(0, path.find_last_of('/'));
 
+    /// TODO: CHANGE THIS ONCE I KNOW A BETTER WAY TO DO IT
+    m_shader_deferred = new Shader("./shaders/vertex_deferred.glsl", "./shaders/fragment_deferred.glsl");
+    m_shader_forward = new Shader("./shaders/vertex_forward.glsl", "./shaders/fragment_forward.glsl");
+
     return processNode(scene->mRootNode, scene);       // Start recursive processing of nodes
+}
+
+Shader* Model::get_deferred_shader()
+{
+    return m_shader_deferred;
+}
+
+Shader* Model::get_forward_shader()
+{
+    return m_shader_forward;
 }
 
 bool Model::processNode(aiNode* node, const aiScene *scene)

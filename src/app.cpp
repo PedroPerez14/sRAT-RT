@@ -25,7 +25,6 @@ const unsigned int& height, const char* window_name)
 }
 
 // Callbacks //TODO: Add more flexibility to assign callbacks for different camera behaviors?
-
 void App::framebuffer_size_callback(GLFWwindow* window, int width, int height) const
 {
     glViewport(0, 0, width, height);
@@ -107,7 +106,9 @@ void App::load_luts(const std::string& dir, const std::string& ext)
     }
 }
 
-// Configure GLAD, callbacks and such, before going into the rendering loop in run()
+/// Configure GLAD, callbacks and such, before going into the rendering loop in run()
+/// NOTE: We're going for a mix of deferred and forward pipeline, so we'll render in 2 passes
+///         even if one of them does no effective work.
 bool App::init()
 {
     // Init GLAD
@@ -137,6 +138,10 @@ bool App::init()
 
 	// Register Scroll zoom callback
 	glfwSetScrollCallback(window, handle_mouse_scroll);
+
+    gl_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();
+    gl_deferred_framebuffer->init(settings->get_window_width(), settings->get_window_height());
+
     return true;
 }
 
@@ -146,8 +151,8 @@ void App::run()
     /// TODO:
     // 1.- Add rgb2spec             [DONE]
     // 2.- load_luts in sRAT-RT     [DONE]
-    // 3.- Class Scene (see Néstor's reference code) (and defining a scene + materials format :) )
-    // 4.- Finish this run() method :)
+    // 3.- Class Scene (see Néstor's reference code) (and defining a scene + materials format :) )  [POSTPONE FOR NOW]
+    // 4.- Finish this run() method :)      [NEED TO DO FRAMEBUFFER STUFF FIRST]
     // 5.- See if I need to activate anything else in init(), i.e my own framebuffer (See Néstor's gist for the framebuffer)
     // 6.- I forgor
 }

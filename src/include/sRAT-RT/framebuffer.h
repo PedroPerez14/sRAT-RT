@@ -1,6 +1,8 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
+/// Credits from this file: Néstor Monzón (gracias néstor)
+
 #include <array>
 
 #include <glad/gl.h>
@@ -14,7 +16,6 @@ class GLFrameBuffer {
 
     GLuint m_frameBufferID;
     std::array<GLuint, N_TEXTURES> m_textureIDs;
-    
 
     unsigned int m_width, m_height;
 
@@ -143,7 +144,6 @@ using GLFrameBufferRGB = GLFrameBuffer<GL_RGB32F, GL_RGB, N_TEXTURES>;
 // RGBA Framebuffer:
 template <size_t N_TEXTURES>
 using GLFrameBufferRGBA = GLFrameBuffer<GL_RGBA32F, GL_RGBA, N_TEXTURES>;
-
 
 // using GLFrameBufferRGBALDR = GLFrameBuffer<GL_RGBA8, GL_RGBA, 1>;
 

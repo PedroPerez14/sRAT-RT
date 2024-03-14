@@ -25,10 +25,16 @@ public:
     void Draw(Shader& shader);
     bool loadModel(const std::string& path);
 
+    Shader* get_deferred_shader();
+    Shader* get_forward_shader();
+
 private:
     std::vector<Texture> textures_loaded;
     std::vector<Mesh> meshes;
     std::string directory;
+
+    Shader* m_shader_deferred;              /// The lighting shader, the geometry pass one is standard (for now?)
+    Shader* m_shader_forward;               /// The shader we'll use in case we have to do forward rendering instead of deferred
 
     bool processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);

@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
 	if(init_success)
 	{
 		app->run();
+		app->cleanup();
 	}
 	else
 	{

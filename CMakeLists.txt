@@ -48,6 +48,7 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/app.h
         src/include/sRAT-RT/scene.h
         src/include/sRAT-RT/framebuffer.h
+        src/include/sRAT-RT/gl_check.h
 
         # Source files
         src/include/rgb2spec/rgb2spec.c

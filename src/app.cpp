@@ -106,6 +106,32 @@ void App::load_luts(const std::string& dir, const std::string& ext)
     }
 }
 
+void App::deltatime_frame_tick()
+{
+    float curr_frame_time = glfwGetTime();
+    m_deltatime = curr_frame_time - m_lastframe_time;
+    m_lastframe_time = curr_frame_time;
+}
+
+void App::process_input(GLFWwindow* window, Camera* camera, float deltaTime)
+{
+    // Camera movement
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			camera->ProcessKeyboard(FORWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			camera->ProcessKeyboard(BACKWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			camera->ProcessKeyboard(LEFT, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			camera->ProcessKeyboard(RIGHT, deltaTime);
+
+		//exit application
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		{
+			glfwSetWindowShouldClose(window, true);
+		}
+}
+
 /// Configure GLAD, callbacks and such, before going into the rendering loop in run()
 /// NOTE: We're going for a mix of deferred and forward pipeline, so we'll render in 2 passes
 ///         even if one of them does no effective work.
@@ -142,17 +168,31 @@ bool App::init()
     gl_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();
     gl_deferred_framebuffer->init(settings->get_window_width(), settings->get_window_height());
 
+    m_deltatime = 0.0f;
+    m_lastframe_time = 0.0f;
+
     return true;
 }
 
 // This one will be our main rendering loop
 void App::run()
 {
-    /// TODO:
-    // 1.- Add rgb2spec             [DONE]
-    // 2.- load_luts in sRAT-RT     [DONE]
-    // 3.- Class Scene (see Néstor's reference code) (and defining a scene + materials format :) )  [POSTPONE FOR NOW]
-    // 4.- Finish this run() method :)      [NEED TO DO FRAMEBUFFER STUFF FIRST]
-    // 5.- See if I need to activate anything else in init(), i.e my own framebuffer (See Néstor's gist for the framebuffer)
-    // 6.- I forgor
+    while(!glfwWindowShouldClose(window))
+    {
+        deltatime_frame_tick();
+        process_input(window, scene->get_camera(), m_deltatime);
+
+        // behold, the main star of the show
+        scene->draw(gl_deferred_framebuffer, scene->get_camera());
+
+        glfwSwapBuffers(window);
+		glfwPollEvents();
+    }
+}
+
+void App::cleanup()
+{
+    /// TODO: Should I free memory here? Or maybe once we end execution in the destructors? hmm
+    glfwTerminate();
+    // ...
 }

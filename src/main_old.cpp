@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
   glUseProgram(program);
   glClearColor(1, 1, 1, 1);
 
-  while (!glfwWindowShouldClose(window)) {
+  while(!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);

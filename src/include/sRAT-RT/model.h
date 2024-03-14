@@ -22,7 +22,7 @@ public:
         loadModel(path);
     }
 
-    void Draw(Shader& shader);
+    void draw(Shader& shader);
     bool loadModel(const std::string& path);
 
     Shader* get_deferred_shader();

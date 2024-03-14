@@ -48,7 +48,7 @@ Model::Model()
 
 }
 
-void Model::Draw(Shader& shader)
+void Model::draw(Shader& shader)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
     {
@@ -70,7 +70,7 @@ bool Model::loadModel(const std::string& path)
     directory = path.substr(0, path.find_last_of('/'));
 
     /// TODO: CHANGE THIS ONCE I KNOW A BETTER WAY TO DO IT
-    m_shader_deferred = new Shader("./shaders/vertex_deferred.glsl", "./shaders/fragment_deferred.glsl");
+    m_shader_deferred = new Shader("./shaders/vertex_deferred_gbuffer.glsl", "./shaders/fragment_deferred_gbuffer.glsl");
     m_shader_forward = new Shader("./shaders/vertex_forward.glsl", "./shaders/fragment_forward.glsl");
 
     return processNode(scene->mRootNode, scene);       // Start recursive processing of nodes

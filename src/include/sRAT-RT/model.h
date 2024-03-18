@@ -28,6 +28,9 @@ public:
     Shader* get_deferred_shader();
     Shader* get_forward_shader();
 
+    void set_deferred_shader(Shader* def);
+    void set_forward_shader(Shader* fwd);
+
 private:
     std::vector<Texture> textures_loaded;
     std::vector<Mesh> meshes;

@@ -9,11 +9,11 @@ Scene::Scene()
     // idk man im a bit tired today
     /// TODO: Define later a proper scene format,
     ///     once I'm more sure about how I'm going to implement all this.
-    Camera* camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
     m_deferred_lighting_pass_shader = new Shader(
-        "./shaders/vertex_deferred_lighting.glsl", 
-        "./shaders/fragment_deferred_lighting.glsl");
+        "../src/shaders/vertex_deferred_lighting.glsl", 
+        "../src/shaders/fragment_deferred_lighting.glsl");
     m_models.empty();
 
     init_fullscreen_quad();
@@ -21,18 +21,24 @@ Scene::Scene()
 
 Scene::Scene(const std::string& scene_file_path)
 {
-    Camera* camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    std::cout << "APP::STATUS::INIT::SCENE_INIT: Initializing the scene..." << std::endl;
+    camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
     m_deferred_lighting_pass_shader = new Shader(
-        "./src/shaders/vertex_deferred_lighting.glsl", 
-        "./src/shaders/fragment_deferred_lighting.glsl");
+        "../src/shaders/vertex_deferred_lighting.glsl", 
+        "../src/shaders/fragment_deferred_lighting.glsl");
     m_models.empty();
 
-    init_fullscreen_quad();
+    init_fullscreen_quad();         // for deferred shading, little hack i guess?
+
     /// TODO: Under construction, will finish this at some point in development
     //          For now I'm only going to use a test scene so who cares
+    //          THIS IS HARDCODED, PROCEED WITH CAUTION
+    load_model("../resources/objects/backpack/backpack.obj", 
+                "../src/shaders/vertex_deferred_gbuffer.glsl", "../src/shaders/fragment_deferred_gbuffer.glsl",
+                "../src/shaders/vertex_forward.glsl", "../src/shaders/fragment_forward.glsl");
 }
 
-bool Scene::load_model(const std::string& model_path)
+bool Scene::load_model(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward)
 {
     /// Néstor's code
     m_models.emplace_back();
@@ -42,6 +48,10 @@ bool Scene::load_model(const std::string& model_path)
         std::cout << "APP::STATUS::INIT::SCENE_ERROR: Could not load model " << model_path << std::endl;
         return false;
     }
+    Shader* _deferred = new Shader(v_deferred.c_str(), f_deferred.c_str());
+    Shader* _forward = new Shader(v_forward.c_str(), f_forward.c_str());
+    model.set_deferred_shader(_deferred);
+    model.set_forward_shader(_forward);
 
     return true;
 }

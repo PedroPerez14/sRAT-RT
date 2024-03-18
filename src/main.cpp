@@ -40,6 +40,7 @@ int main(int argc, char* argv[])
 	
 	if(init_success)
 	{
+		app->load_scene();
 		app->run();
 		app->cleanup();
 	}

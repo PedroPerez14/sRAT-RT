@@ -14,7 +14,8 @@ enum Camera_Movement {
     RIGHT
 };
 
-// Default camera values
+/// Default camera values
+/// TODO: Change and put this in the .ini?
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
 const float SPEED = 2.5f;
@@ -49,6 +50,7 @@ public:
         Pitch = pitch;
         updateCameraVectors();
     }
+
     // constructor with scalar values
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
@@ -82,8 +84,8 @@ public:
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
     void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
     {
-        xoffset *= MouseSensitivity;
-        yoffset *= MouseSensitivity;
+        xoffset = xoffset * MouseSensitivity;
+        yoffset = yoffset * MouseSensitivity;
 
         Yaw += xoffset;
         Pitch += yoffset;

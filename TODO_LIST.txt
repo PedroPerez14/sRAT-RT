@@ -7,5 +7,9 @@
     2.2.- Hardcode a test scene? just specify a camera position, shaders, a target texture and a few shaders (deferred lighting are defined by default)
 3.- Remember the structure of the GBuffer! [ AND CHANGE IT WHENEVER YOU NEED IT, IT'S JUST A PLACEHOOLDER FOR NOW ]
     3.1.- //write here the structure, i forgot it
-4.- WRITE THE SHADERS FOR RENDERING THE TEST SCENE -- Do this first
-5.- Think about more things that are to be done/improved/debugged/worsened
+4.- WRITE THE SHADERS FOR RENDERING THE TEST SCENE -- DONE (I hope it doesn't explode :) )
+    4.1.- STILL LEFT TO DO --> Properly set the uniforms for the 3 shader passes (write code in the set_somethingsomething_uniforms() methods I created a few days ago)
+5.- What about the m_fullscreen_vao? -- Do this second, needed to render properly
+    5.1.- Do I need it or can it be bypassed by generating fake vertex coords in the deferred lighting shader?
+    5.2.- This is going to come back later to bite me in the ass I can see it, clear as day
+6.- Think about more things that are to be done/improved/debugged/worsened

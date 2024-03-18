@@ -1,7 +1,7 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-/// Credits from this file: Néstor Monzón (gracias néstor)
+/// Credits for this file: Néstor Monzón (gracias néstor)
 
 #include <array>
 
@@ -105,8 +105,9 @@ public:
     void bindTextures() const {
         for (size_t i = 0; i < N_TEXTURES; i++)
         {
-            glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]);
+            std::cout << "binding texture: " << i << std::endl;
+            GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
+            GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]));
         }
     }
 

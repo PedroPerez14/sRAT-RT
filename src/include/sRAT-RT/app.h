@@ -48,11 +48,12 @@ public:
     ~App();
 
     bool init();                        // Configure GLAD, callbacks,etc. before running
+    void load_scene();                  // Since this creates shaders, it must be called AFTER initializing the app (which initializes glad)
     void run();                         // This method will have the render loop, like our old main functions
     void cleanup();                     // To be called once we exit the main loop in run()
 
-    void framebuffer_size_callback(GLFWwindow* window, int width, int height) const;
-    void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) const;
+    void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+    void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
     void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 };
 

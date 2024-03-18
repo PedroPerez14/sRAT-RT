@@ -19,7 +19,7 @@ private:
     unsigned int m_fullscreen_vao;
     std::vector<Model> m_models;
 
-    bool load_model(const std::string& model_path);
+    bool load_model(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward);
 
     /// HERE: I'll probably have to change this later on, for now it's fine
     void set_shader_camera_uniforms(Shader* shader, Camera* cam);
@@ -30,11 +30,14 @@ private:
     template <GLuint INTERNAL_FORMAT, GLuint FORMAT, size_t N_TEXTURES>
     void render_quad(GLFrameBuffer<INTERNAL_FORMAT, FORMAT, N_TEXTURES>* framebuffer)             // The deferred lighting pass itself
     {
+        framebuffer->unbindTextures();
         m_deferred_lighting_pass_shader->use();
         // Diffuse Texture x:
-        GL_CHECK(glActiveTexture(GL_TEXTURE0));
-        glBindTexture(GL_TEXTURE_2D, framebuffer->getTextureID(0));
-        m_deferred_lighting_pass_shader->setVec2("exposure", glm::vec2(0.02, 0.75));     // Invent
+        //GL_CHECK(glActiveTexture(GL_TEXTURE));
+        //GL_CHECK(glEnable(GL_TEXTURE_2D));
+        //GL_CHECK(glBindTexture(GL_TEXTURE_2D, framebuffer->getTextureID(0)));
+        framebuffer->bindTextures();
+        m_deferred_lighting_pass_shader->setFloat("exposure", 0.75);     // TODO CHANGE later
 
         glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded
         
@@ -72,8 +75,8 @@ public:
         // 2. Deferred lighting pass: use g-buffer to calculate the scene’s lighting
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // We have unbinded the gbuffer, so this is the default framebuffer (the "screen"?)
         
-        framebuffer->bindTextures();
-        m_deferred_lighting_pass_shader->use();
+        //framebuffer->bindTextures();
+        //m_deferred_lighting_pass_shader->use();
         /// TODO: Do the uniforms later? Add "lights" parameter?? who knows
         set_scene_lighting_uniforms(m_deferred_lighting_pass_shader, camera);                          
         render_quad(framebuffer);

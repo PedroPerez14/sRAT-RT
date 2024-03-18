@@ -25,12 +25,12 @@ const unsigned int& height, const char* window_name)
 }
 
 // Callbacks //TODO: Add more flexibility to assign callbacks for different camera behaviors?
-void App::framebuffer_size_callback(GLFWwindow* window, int width, int height) const
+void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
-void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset) const
+void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     scene->get_camera()->ProcessMouseScroll(yoffset);
 }
@@ -57,9 +57,9 @@ void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 App::App()
 {
     settings = new Settings();
-    scene = new Scene(settings->get_scene());
-    window = init_glfw_and_create_window(settings->get_window_width(), 
-            settings->get_window_height(), settings->get_window_name().c_str());
+    window = init_glfw_and_create_window(settings->get_window_width(),
+        settings->get_window_height(), settings->get_window_name().c_str());
+    
     if(!window)
         exit(1);
 }
@@ -68,9 +68,6 @@ App::App(std::string path_settings)
 {
     // Load the settings
     settings = new Settings(path_settings);
-
-    // Load the scene
-    scene = new Scene(settings->get_scene());
 
     // Load the uplifting Look Up Tables
     look_up_tables = new std::unordered_map<colorspace, RGB2Spec*>();
@@ -96,13 +93,22 @@ App::~App()
 void App::load_luts(const std::string& dir, const std::string& ext)
 {   
     // God forgive me for this awful way to do this
-    for(std::string colorspace_key : colorspace_translations)
+    for(auto colorspace_key : colorspace_translations)
     {
         colorspace colorspace_value = colorspace_translations_inv.at(colorspace_key);
-        const char* full_path = (dir + colorspace_key + ext).c_str();
+        std::string aux = dir + colorspace_key + ext;
+        const char* full_path = aux.c_str();
+        std::cout << "APP::STATUS::INIT::LOADING_LUTS: Loading " << full_path << std::endl;
         RGB2Spec* pointer = rgb2spec_load(full_path);
-        (*look_up_tables)[colorspace_value] = pointer;
-        std::cout << "APP::STATUS::INIT::LOADING_LUTS::LOADED: Loaded LUT " << full_path << std::endl;
+        if (pointer == NULL)
+        {
+            std::cout << "APP::STATUS::INIT::LOADING_LUTS::ERROR_NOT_FOUND: LUT " << full_path << " could not be found!" << std::endl;
+        }
+        else
+        {
+            (*look_up_tables)[colorspace_value] = pointer;
+            std::cout << "APP::STATUS::INIT::LOADING_LUTS::LOADED: Loaded LUT " << full_path << std::endl;
+        }
     }
 }
 
@@ -140,8 +146,7 @@ bool App::init()
     // Init GLAD
     if (!gladLoaderLoadGL())
     {
-      throw std::runtime_error("Error initializing glad");
-      return false;
+        throw std::runtime_error("Error initializing glad");
     }
 
     // Set viewport size
@@ -154,7 +159,7 @@ bool App::init()
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Set user pointer to this class so that we can register the callbacks properly
-    glfwSetWindowUserPointer(window, reinterpret_cast<void *>(this));
+    glfwSetWindowUserPointer(window, this);
 
 	// Register callback function for every resize event
 	glfwSetFramebufferSizeCallback(window, handle_framebuffer_resize);
@@ -172,6 +177,12 @@ bool App::init()
     m_lastframe_time = 0.0f;
 
     return true;
+}
+
+void App::load_scene()
+{
+    // Load the scene
+    scene = new Scene(settings->get_scene());
 }
 
 // This one will be our main rendering loop

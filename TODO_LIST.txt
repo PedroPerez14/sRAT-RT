@@ -1,0 +1,11 @@
+# List of things to be done in the near (or far (or very far)) future, in no particular order:
+
+1.- Allow the definition and loading of custom shaders for the deferred shading pass of the scene (so far it's hardcoded in scene.cpp as {vertex/fragment}_deferred_lighting.glsl)
+    1.1.- Where will the users be able to specify it? Config .ini file or scene .xml file?
+2.- Define a proper format for our scenes, enabling specificaiton for models, textures, positions, rotations, etc.
+    2.1.- Copy Mitsuba's format? Or will it be time consuming? hmmm
+    2.2.- Hardcode a test scene? just specify a camera position, shaders, a target texture and a few shaders (deferred lighting are defined by default)
+3.- Remember the structure of the GBuffer! [ AND CHANGE IT WHENEVER YOU NEED IT, IT'S JUST A PLACEHOOLDER FOR NOW ]
+    3.1.- //write here the structure, i forgot it
+4.- WRITE THE SHADERS FOR RENDERING THE TEST SCENE -- Do this first
+5.- Think about more things that are to be done/improved/debugged/worsened

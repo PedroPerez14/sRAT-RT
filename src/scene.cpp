@@ -23,8 +23,8 @@ Scene::Scene(const std::string& scene_file_path)
 {
     Camera* camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
     m_deferred_lighting_pass_shader = new Shader(
-        "./shaders/vertex_deferred_lighting.glsl", 
-        "./shaders/fragment_deferred_lighting.glsl");
+        "./src/shaders/vertex_deferred_lighting.glsl", 
+        "./src/shaders/fragment_deferred_lighting.glsl");
     m_models.empty();
 
     init_fullscreen_quad();

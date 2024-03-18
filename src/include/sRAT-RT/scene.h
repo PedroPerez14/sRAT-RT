@@ -53,6 +53,10 @@ public:
     template <GLuint INTERNAL_FORMAT, GLuint FORMAT, size_t N_TEXTURES>
     void draw(GLFrameBuffer<INTERNAL_FORMAT, FORMAT, N_TEXTURES>* framebuffer, Camera* cam)
     {
+        // clear the default framebuffer
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // now clear the gbuffer and write to it
         framebuffer->bind();
         glClearColor(0.0, 0.0, 0.0, 1.0);
         framebuffer->clear();
@@ -60,17 +64,10 @@ public:
         for(Model& model : m_models)
         {
             /// TODO: Do the uniforms later
-            set_shader_camera_uniforms(model.get_deferred_shader(), camera); //todo
-            model.draw((*model.get_deferred_shader()));        // Put everything in our deferred GBuffer
+            set_shader_camera_uniforms(model.get_deferred_shader(), camera);        /// TODO
+            model.draw((*model.get_deferred_shader()));        // Put everything in our deferred GBuffer 
         }
         framebuffer->unbind();
-
-        // 1.5. Move the depth data from the gbuffer to the default framebuffer
-        framebuffer->bindForReading();              // glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);  // write to default framebuffer
-        glBlitFramebuffer(0, 0, framebuffer->getWidth(), framebuffer->getHeight(), 0, 0, framebuffer->getWidth(), framebuffer->getHeight(),
-        GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // 2. Deferred lighting pass: use g-buffer to calculate the scene’s lighting
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // We have unbinded the gbuffer, so this is the default framebuffer (the "screen"?)
@@ -80,6 +77,26 @@ public:
         /// TODO: Do the uniforms later? Add "lights" parameter?? who knows
         set_scene_lighting_uniforms(m_deferred_lighting_pass_shader, camera);                          
         render_quad(framebuffer);
+
+        // 2.5. Move the depth data from the gbuffer to the default framebuffer
+        framebuffer->bindForReading();              // glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);  // write to default framebuffer
+        glBlitFramebuffer(0, 0, framebuffer->getWidth(), framebuffer->getHeight(), 0, 0, framebuffer->getWidth(), framebuffer->getHeight(),
+        GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        /// 3. Forward pass (in case we want to do it)
+        /// TODO: Should I let the users define a null forward shader to skip this pass entirely?
+        ///         Or just use a standard forward shader that does nothing???? hmmm
+        for(Model& model : m_models)
+        {
+            /// TODO: Do the uniforms later
+            set_shader_camera_uniforms(model.get_forward_shader(), camera); /// TODO
+            model.draw((*model.get_forward_shader()));                      
+        }
+
+        // We don't call glfwSwapBuffers here, 
+        //  App::run() is already doing it on its loop
     }
 };
 

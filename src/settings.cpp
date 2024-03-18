@@ -19,6 +19,9 @@ void Settings::set_defaults()
     num_wavelengths = 4;
     window_width = 800;
     window_height = 600;
+    wl_min = 380.0f;
+    wl_max = 700.0f;
+    window_name = "sRAT-RT: Spectral Renderer for Atmospheres and other Tasks in Real Time - indev 0.0.1";
 }
 
 Settings::Settings(const std::string& config_file)
@@ -62,7 +65,16 @@ bool Settings::load_settings(const std::string& config_file)
         if(ini["SETTINGS"].has("colorspace_render"))
         {
             std::string aux = ini["SETTINGS"]["colorspace_render"];
-            colorspace_render = colorspace_translations_inv.at(aux);
+            try
+            {
+                colorspace_render = colorspace_translations_inv.at(aux);
+            }
+            catch(std::ifstream::failure e)
+            {
+                std::cout << "SETTINGS::STATUS::LOAD_ERROR::READ_ERROR: " << e.what() << std::endl;
+                std::cout << "Value read for colorspace: " << aux << std::endl;
+                std::cout << "Hint: Did you spell the colorspace correctly? Check colorspace.h for reference!" << std::endl;
+            }
         }
         if(ini["SETTINGS"].has("num_wavelengths"))
             num_wavelengths = std::stoul(ini["SETTINGS"]["num_wavelengths"]);
@@ -70,6 +82,12 @@ bool Settings::load_settings(const std::string& config_file)
             num_wavelengths = std::stoul(ini["SETTINGS"]["window_width"]);
         if(ini["SETTINGS"].has("window_height"))
             num_wavelengths = std::stoul(ini["SETTINGS"]["window_height"]);
+        if(ini["SETTINGS"].has("wl_min"))
+            wl_min = std::stof(ini["SETTINGS"]["wl_min"]);
+        if(ini["SETTINGS"].has("wl_max"))
+            wl_max = std::stof(ini["SETTINGS"]["wl_max"]);
+        if(ini["SETTINGS"].has("window_name"))
+            window_name = ini["SETTINGS"]["window_name"];
     }
     else
     {
@@ -94,6 +112,9 @@ bool Settings::save_settings(const std::string& config_file)
     ini["SETTINGS"]["num_wavelengths"] = std::to_string(num_wavelengths);
     ini["SETTINGS"]["window_width"] = std::to_string(window_width);
     ini["SETTINGS"]["window_height"] = std::to_string(window_height);
+    ini["SETTINGS"]["wl_min"] = std::to_string(wl_min);
+    ini["SETTINGS"]["wl_max"] = std::to_string(wl_max);
+    ini["SETTINGS"]["window_name"] = window_name;
 
     // Try to write it, it'll overwrite files with matching names. 2nd parameter is for pretty printing
     bool success = file.generate(ini, true);

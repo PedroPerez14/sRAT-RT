@@ -25,8 +25,8 @@ public:
     void draw(Shader& shader);
     bool loadModel(const std::string& path);
 
-    Shader* get_deferred_shader();
-    Shader* get_forward_shader();
+    Shader* get_deferred_shader() const;
+    Shader* get_forward_shader() const;
 
     void set_deferred_shader(Shader* def);
     void set_forward_shader(Shader* fwd);

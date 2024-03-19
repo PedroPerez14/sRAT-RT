@@ -30,12 +30,22 @@ Scene::Scene(const std::string& scene_file_path)
 
     init_fullscreen_quad();         // for deferred shading, little hack i guess?
 
+    /////////////////////////
     /// TODO: Under construction, will finish this at some point in development
     //          For now I'm only going to use a test scene so who cares
     //          THIS IS HARDCODED, PROCEED WITH CAUTION
-    load_model("../resources/objects/backpack/backpack.obj", 
+    bool wasd = load_model("../resources/objects/backpack/backpack.obj", 
                 "../src/shaders/vertex_deferred_gbuffer.glsl", "../src/shaders/fragment_deferred_gbuffer.glsl",
                 "../src/shaders/vertex_forward.glsl", "../src/shaders/fragment_forward.glsl");
+    if(wasd)
+    {
+        std::cout << "Scene successfully loaded!" << std::endl;
+    }
+    else
+    {
+        std::cout << "APP::STATUS::SCENE_LOAD::ERROR: Test model was not properly loaded!" << std::endl;
+    }
+    /////////////////////////
 }
 
 bool Scene::load_model(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward)
@@ -56,16 +66,28 @@ bool Scene::load_model(const std::string& model_path, std::string v_deferred, st
     return true;
 }
 
-void Scene::set_shader_camera_uniforms(Shader* shader, Camera* cam)
+void Scene::set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height)
 {
-    /// TODO: Cómo cojones hago yo para poner los uniforms de un shader cualquiera xdd
-    //shader.set();
+    /// TODO: HARDCODEADO, CAMBIAR LUEGO
+    shader->use();
+    glm::mat4 projection = glm::perspective(glm::radians(cam->Zoom), (float)width / (float) height, 0.1f, 100.0f);
+    glm::mat4 view = camera->GetViewMatrix();
+    glm::mat4 model = glm::mat4(1.0f);
+
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+
+    shader->setMat4("projection", projection);
+    shader->setMat4("view", view);
+    shader->setMat4("model", model);
 }
 
+/// TODO: HARDCODED!
 void Scene:: set_scene_lighting_uniforms(Shader* shader, Camera* cam)
 {
     /// TODO: Cómo cojones hago yo para poner los uniforms de un shader cualquiera xdd
-    //shader.set();
+    shader->use();
+    shader->setFloat("exposure", 0.75);
+    shader->setInt("flipY", 0);
 }
 
 /// Do only once during initialization !

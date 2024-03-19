@@ -4,7 +4,7 @@ in vec2 fTexcoords;
 
 out vec4 out_color;
 
-uniform sampler2D tex;
+layout (binding = 0) uniform sampler2D tex;
 uniform float exposure;
 
 vec3 encode_sRGB(vec3 linear_RGB)

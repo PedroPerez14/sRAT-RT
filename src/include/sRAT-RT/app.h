@@ -12,7 +12,7 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
-#define FRAMEBUFFER_TEX_NUM 5   /// CHANGE THIS LATER, ONCE I KNOW HOW TO DO SHIT!
+#define FRAMEBUFFER_TEX_NUM 3   /// CHANGE THIS LATER, ONCE I KNOW HOW TO DO STUFF!
 
 class App
 {

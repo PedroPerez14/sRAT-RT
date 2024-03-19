@@ -28,47 +28,29 @@ public:
     void init(unsigned int width, unsigned int height) {
         std::cout << "[Framebuffer] initializing... ";
         m_width = width; m_height = height;
-        glGenFramebuffers(1, &m_frameBufferID);
-        glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferID);
+        GL_CHECK(glGenFramebuffers(1, &m_frameBufferID));
+        GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferID));
         
         GLuint attachments[N_TEXTURES];
         for (size_t i = 0; i < N_TEXTURES; i++)
         {
-            glGenTextures(1, &m_textureIDs[i]);
-            glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]);
-            glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, GL_FLOAT, NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textureIDs[i], 0);
+            GL_CHECK(glGenTextures(1, &m_textureIDs[i]));
+            GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]));
+            GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, GL_FLOAT, NULL));
+            GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+            GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+            GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_textureIDs[i], 0));
             
+            // GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
+            // GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+
             attachments[i] = GL_COLOR_ATTACHMENT0 + i;
         }
 
         // - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
         glDrawBuffers(N_TEXTURES, attachments); 
-        // finally check if framebuffer is complete
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "Framebuffer not complete!" << std::endl;
-        else 
-            std::cout << "[" << width << "x"<< height << "] done\n";
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        
-    }
 
-    void initWithDepth(unsigned int width, unsigned int height) {
-        std::cout << "[Framebuffer] initializing... ";
-        m_width = width; m_height = height;
-        // frame buffer configuration 
-        glGenFramebuffers(1, &m_frameBufferID); 
-        glBindFramebuffer(GL_FRAMEBUFFER, m_frameBufferID); 
-    
-        glGenTextures(1, &m_textureIDs[0]); 
-        glBindTexture(GL_TEXTURE_2D, m_textureIDs[0]); 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, 0);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_textureIDs[0], 0); 
-    
+        /// DEPTH ///
         GLuint captureRBO;
         // create a renderbuffer object for depth and stencil attachment (we won't be sampling these) 
         glGenRenderbuffers(1, &captureRBO); 
@@ -76,10 +58,13 @@ public:
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height); // use a single renderbuffer object for both a depth AND stencil buffer. 
     
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);	// now actually attach it 
-        // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now 
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) 
-            std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl; 
-
+        // finally check if framebuffer is complete
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Framebuffer not complete!" << std::endl;
+        else 
+            std::cout << "[" << width << "x"<< height << "] done\n";
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        
     }
 
     GLuint getID() const { return m_frameBufferID; }
@@ -105,7 +90,7 @@ public:
     void bindTextures() const {
         for (size_t i = 0; i < N_TEXTURES; i++)
         {
-            std::cout << "binding texture: " << i << std::endl;
+            std::cout << "binding texture: " << i << " " << m_textureIDs[i] << std::endl;
             GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
             GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]));
         }
@@ -114,8 +99,8 @@ public:
     void unbindTextures() const {
         for (size_t i = 0; i < N_TEXTURES; i++)
         {
-            glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, 0);
+            GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
+            GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
         }
     }
 

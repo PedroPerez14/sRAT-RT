@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sRAT-RT/app.h>
 #include <sRAT-RT/input.h>
+#include <sRAT-RT/stb_image.h>
 
 GLFWwindow* init_glfw_and_create_window(const unsigned int& width, 
 const unsigned int& height, const char* window_name)
@@ -151,6 +152,9 @@ bool App::init()
 
     // Set viewport size
 	glViewport(0, 0, settings->get_window_width(), settings->get_window_height());
+
+    // stbi flip Y axis in textures
+    stbi_set_flip_vertically_on_load(true);
 
 	// Enable depth Z-Buffer
 	glEnable(GL_DEPTH_TEST);

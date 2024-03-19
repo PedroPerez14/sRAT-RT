@@ -72,12 +72,12 @@ bool Model::loadModel(const std::string& path)
     return processNode(scene->mRootNode, scene);       // Start recursive processing of nodes
 }
 
-Shader* Model::get_deferred_shader()
+Shader* Model::get_deferred_shader() const
 {
     return m_shader_deferred;
 }
 
-Shader* Model::get_forward_shader()
+Shader* Model::get_forward_shader() const
 {
     return m_shader_forward;
 }

@@ -49,6 +49,9 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/scene.h
         src/include/sRAT-RT/framebuffer.h
         src/include/sRAT-RT/gl_check.h
+        src/include/sRAT-RT/renderer.h
+        src/include/sRAT-RT/renderer_def_fwd.h
+        src/include/sRAT-RT/renderer_test_uplifting.h
 
         # Source files
         src/include/rgb2spec/rgb2spec.c
@@ -58,6 +61,8 @@ add_executable(sRAT-RT
         src/settings.cpp
         src/app.cpp
         src/scene.cpp
+        src/renderer_def_fwd.cpp  
+        src/renderer_test_uplifting.cpp
         src/main.cpp
 )
 

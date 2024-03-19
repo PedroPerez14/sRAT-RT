@@ -10,25 +10,14 @@ Scene::Scene()
     /// TODO: Define later a proper scene format,
     ///     once I'm more sure about how I'm going to implement all this.
     camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-
-    m_deferred_lighting_pass_shader = new Shader(
-        "../src/shaders/vertex_deferred_lighting.glsl", 
-        "../src/shaders/fragment_deferred_lighting.glsl");
     m_models.empty();
-
-    init_fullscreen_quad();
 }
 
 Scene::Scene(const std::string& scene_file_path)
 {
     std::cout << "APP::STATUS::INIT::SCENE_INIT: Initializing the scene..." << std::endl;
     camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-    m_deferred_lighting_pass_shader = new Shader(
-        "../src/shaders/vertex_deferred_lighting.glsl", 
-        "../src/shaders/fragment_deferred_lighting.glsl");
     m_models.empty();
-
-    init_fullscreen_quad();         // for deferred shading, little hack i guess?
 
     /////////////////////////
     /// TODO: Under construction, will finish this at some point in development
@@ -66,44 +55,15 @@ bool Scene::load_model(const std::string& model_path, std::string v_deferred, st
     return true;
 }
 
-void Scene::set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height)
-{
-    /// TODO: HARDCODEADO, CAMBIAR LUEGO
-    shader->use();
-    glm::mat4 projection = glm::perspective(glm::radians(cam->Zoom), (float)width / (float) height, 0.1f, 100.0f);
-    glm::mat4 view = camera->GetViewMatrix();
-    glm::mat4 model = glm::mat4(1.0f);
-
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-
-    shader->setMat4("projection", projection);
-    shader->setMat4("view", view);
-    shader->setMat4("model", model);
-}
-
-/// TODO: HARDCODED!
-void Scene:: set_scene_lighting_uniforms(Shader* shader, Camera* cam)
-{
-    /// TODO: Cómo cojones hago yo para poner los uniforms de un shader cualquiera xdd
-    shader->use();
-    shader->setFloat("exposure", 0.75);
-    shader->setInt("flipY", 0);
-}
-
-/// Do only once during initialization !
-void Scene::init_fullscreen_quad()
-{
-    GL_CHECK(glGenVertexArrays(1, &m_fullscreen_vao));
-    GL_CHECK(glBindVertexArray(m_fullscreen_vao));
-    GL_CHECK(glEnableVertexAttribArray(0));
-    GL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL));
-}
-
-Camera* Scene::get_camera()
+Camera* Scene::get_camera() const
 {
     return camera;
 }
 
+std::vector<Model> Scene::get_models() const
+{
+    return m_models;
+}
 
 /// Needs the framebuffer to be bound beforehand! 
 //  (call framebuffer->bind() in run() beofre doing scene->draw() and it's ok)

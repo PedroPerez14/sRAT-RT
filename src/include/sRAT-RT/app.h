@@ -3,6 +3,7 @@
 
 #include <sRAT-RT/scene.h>
 #include <sRAT-RT/settings.h>
+#include <sRAT-RT/renderer.h>
 #include <rgb2spec/rgb2spec.h>
 #include <sRAT-RT/colorspace.h>
 #include <sRAT-RT/framebuffer.h>
@@ -21,14 +22,11 @@ private:
     Scene* scene;
     Settings* settings;         // Create settings here
     GLFWwindow* window;
+    Renderer* renderer;
     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables;
 
     float m_deltatime;
     float m_lastframe_time;
-
-    /// TODO: I don't know how to declare this framebuffer
-    //      For now I'm using rgba and 5 textures, CHANGE LATER IF NEEDED!
-    GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* gl_deferred_framebuffer;
 
     struct Mouse_data
     {

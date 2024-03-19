@@ -4,6 +4,10 @@
 #include <sRAT-RT/input.h>
 #include <sRAT-RT/stb_image.h>
 
+// RENDERERS
+#include <sRAT-RT/renderer_def_fwd.h>
+#include <sRAT-RT/renderer_test_uplifting.h>
+
 GLFWwindow* init_glfw_and_create_window(const unsigned int& width, 
 const unsigned int& height, const char* window_name)
 {
@@ -174,8 +178,8 @@ bool App::init()
 	// Register Scroll zoom callback
 	glfwSetScrollCallback(window, handle_mouse_scroll);
 
-    gl_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();
-    gl_deferred_framebuffer->init(settings->get_window_width(), settings->get_window_height());
+    //renderer = new RendererDeferredAndForward(settings->get_window_width(), settings->get_window_height());
+    renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height());
 
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
@@ -185,11 +189,10 @@ bool App::init()
 
 void App::load_scene()
 {
-    // Load the scene
     scene = new Scene(settings->get_scene());
 }
 
-// This one will be our main rendering loop
+// This will be our main rendering loop
 void App::run()
 {
     while(!glfwWindowShouldClose(window))
@@ -197,8 +200,9 @@ void App::run()
         deltatime_frame_tick();
         process_input(window, scene->get_camera(), m_deltatime);
 
-        // behold, the main star of the show
-        scene->draw(gl_deferred_framebuffer, scene->get_camera());
+        // Renderer virtual class added to allow easy implementation 
+        //      of more renderers with different passes each
+        renderer->render_scene(scene);
 
         glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -207,7 +211,7 @@ void App::run()
 
 void App::cleanup()
 {
-    /// TODO: Should I free memory here? Or maybe once we end execution in the destructors? hmm
+    /// TODO: Should I free memory here? Or maybe once we end execution in the destructors?
     glfwTerminate();
     // ...
 }

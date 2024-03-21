@@ -3,7 +3,6 @@
 out vec2 fTexcoords;
 uniform int flipY;          // Acts as a bool, is int for possible compatibility issues
 
-
 void main()
 {
     vec2 pos = vec2(gl_VertexID % 2, gl_VertexID / 2) * 4.0 - 1.0;

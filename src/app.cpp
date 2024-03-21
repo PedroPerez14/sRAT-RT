@@ -96,7 +96,7 @@ App::~App()
 }
 
 void App::load_luts(const std::string& dir, const std::string& ext)
-{   
+{
     // God forgive me for this awful way to do this
     for(auto colorspace_key : colorspace_translations)
     {
@@ -179,8 +179,9 @@ bool App::init()
 	glfwSetScrollCallback(window, handle_mouse_scroll);
 
     //renderer = new RendererDeferredAndForward(settings->get_window_width(), settings->get_window_height());
-    renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height());
-
+    renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height(), 
+                                        look_up_tables, settings->get_colorspace(), settings->get_num_wavelengths(), 
+                                        settings->get_wl_min(), settings->get_wl_max());
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
 

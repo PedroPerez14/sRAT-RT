@@ -4,34 +4,51 @@
 #define RENDERER_TEST_UPLIFTING_H
 
 #include <sRAT-RT/renderer.h>
+#include <sRAT-RT/colorspace.h>
+#include <rgb2spec/rgb2spec.h>
 
-#define NUM_WAVELENGTHS 40
+#define NUM_WAVELENGTHS 12
 #define FRAMEBUFFER_TEX_NUM (NUM_WAVELENGTHS / 4 + 1)
 
 class RendererTestUplifting : public Renderer
 {
 public:
 
-    RendererTestUplifting(unsigned int fb_w, unsigned int fb_h);
+    RendererTestUplifting(unsigned int fb_w, unsigned int fb_h, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
+                            colorspace _colorspace=SRGB, int n_wls=40, float wl_min=360.0, float wl_max=830.0);
 
     /// @brief This renderer will render a texture in fullscreen, for some testing
     /// @param scene 
     void render_scene(Scene* scene) const;
-   
+
+    colorspace get_colorspace() const;
+    void set_colorspace(colorspace _c);
+
 private:
+
+    typedef struct lut_as_tex3d
+    {
+        unsigned int tex_ids[3];        // LUT as opengl texture 3d, size NxNxN
+        int res;                        // N
+    };
+
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
+    std::unordered_map<colorspace, lut_as_tex3d>* lut_textures;
     Shader* m_deferred_lighting_pass_shader;
+    colorspace working_colorspace;
     unsigned int m_fullscreen_vao;
     unsigned int tex_test;
     unsigned int tex_lut;
+    int num_wavelengths;
+    float wl_min;
+    float wl_max;
 
     void set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height) const;
     void set_scene_lighting_uniforms(Shader* shader, Camera* cam) const;
     void render_quad() const;
     void init_fullscreen_quad();
     unsigned int texture_from_file(const char* path, const std::string& directory);
-    unsigned int lut_tex_create(/* TODO: SOMETHING GOES HERE */);
-    
+    void lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables);
 };
 
 #endif

@@ -7,9 +7,12 @@ RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_
 {
     m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();
     m_deferred_framebuffer->init(fb_w, fb_h);
-    m_deferred_lighting_pass_shader = new Shader(
+    m_uplifting_shader = new Shader(
     "../src/shaders/test_uplifting/vertex_uplifting.glsl", 
     "../src/shaders/test_uplifting/fragment_uplifting.glsl");
+    m_final_pass_shader = new Shader(
+    "../src/shaders/test_uplifting/vertex_uplifting_pass2.glsl", 
+    "../src/shaders/test_uplifting/fragment_uplifting_pass2.glsl");
     /// TODO: Try uplifting several different textures!
     tex_test = texture_from_file("container.jpg", "../resources/textures");
     // Now, initialize the 3D textures from the LUTs we loaded as 1D arrays
@@ -35,8 +38,8 @@ void RendererTestUplifting::render_scene(Scene* scene) const
 
     /// Use the shader, set its uniforms (TODO), bind the texture to uplift, 
     ///         as well as the 3D ones that represent the LUTs
-    m_deferred_lighting_pass_shader->use();
-    set_scene_lighting_uniforms(m_deferred_lighting_pass_shader, cam);
+    m_uplifting_shader->use();
+    set_scene_lighting_uniforms(m_uplifting_shader, cam);
 
     // Bind the 2D texture for the test
     GL_CHECK(glActiveTexture(GL_TEXTURE0));
@@ -52,28 +55,25 @@ void RendererTestUplifting::render_scene(Scene* scene) const
     }
 
     render_quad();
-    /*
-        // 2.5. Move the depth data from the gbuffer to the default framebuffer
-        m_deferred_framebuffer->bindForReading();              // glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);  // write to default framebuffer
-        glBlitFramebuffer(0, 0, m_deferred_framebuffer->getWidth(), m_deferred_framebuffer->getHeight(), 
-                            0, 0, m_deferred_framebuffer->getWidth(), m_deferred_framebuffer->getHeight(),
-                            GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        /// 3. Forward pass (in case we want to do it)
-        /// TODO: Should I let the users define a null forward shader to skip this pass entirely?
-        ///         Or just use a standard forward shader that does nothing???? hmmm
-        for(Model& model : scene->get_models())
-        {
-            /// TODO: Do the uniforms later
-            set_shader_camera_uniforms(model.get_forward_shader(), cam, m_deferred_framebuffer->getWidth(), m_deferred_framebuffer->getHeight()); /// TODO NOT TRIED FORWARD PASS YET!
-            model.draw((*model.get_forward_shader()));                      
-        }
+    m_deferred_framebuffer->unbind();
 
-        // We don't call glfwSwapBuffers here, 
-        //  App::run() is already doing it on its rendering loop
-    */
+    // 2. Final pass: Draw into the screen
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // Clear default framebuffer (the screen)
+
+    // Set the shader uniforms
+    m_final_pass_shader->use();
+    m_final_pass_shader->setInt("show_original_tex_or_spec2rgb", 1);
+    
+    for(int i = 0; i < 4; i++)
+    {
+        GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
+        glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i));
+    }
+    render_quad();
+
+    // We don't call glfwSwapBuffers here, 
+    // App::run() is already doing it on its rendering loop, so we're done!
 }
 
 void RendererTestUplifting::set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height) const
@@ -189,8 +189,8 @@ void RendererTestUplifting::lut_textures_create(std::unordered_map<colorspace, R
             int _res = rgb2spec->res;
             buffer_tex = new float[3*_res*_res*_res];
             size_t offset = i * 3 * _res * _res * _res;
-            std::memcpy(buffer_tex, rgb2spec->data + offset, 3*_res*_res*_res*sizeof(float));
-            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, _res, _res, _res,
+            std::memcpy(buffer_tex, &(rgb2spec->data[offset]), 3*_res*_res*_res * sizeof(float));
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, _res, _res, _res,
                         0, GL_RGB, GL_FLOAT, buffer_tex);
         }
         // Free the buffer
@@ -218,4 +218,18 @@ colorspace RendererTestUplifting::get_colorspace() const
 void RendererTestUplifting::set_colorspace(colorspace _c)
 {
     working_colorspace = _c;
+}
+
+void RendererTestUplifting::reload_shaders()
+{
+    delete m_uplifting_shader;
+    delete m_final_pass_shader;
+    
+    new Shader(
+    "../src/shaders/test_uplifting/vertex_uplifting.glsl", 
+    "../src/shaders/test_uplifting/fragment_uplifting.glsl");
+
+    m_final_pass_shader = new Shader(
+    "../src/shaders/test_uplifting/vertex_uplifting_pass2.glsl", 
+    "../src/shaders/test_uplifting/fragment_uplifting_pass2.glsl");
 }

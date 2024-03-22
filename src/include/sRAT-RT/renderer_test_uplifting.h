@@ -26,7 +26,7 @@ public:
 
 private:
 
-    typedef struct lut_as_tex3d
+    struct lut_as_tex3d
     {
         unsigned int tex_ids[3];        // LUT as opengl texture 3d, size NxNxN
         int res;                        // N
@@ -34,7 +34,8 @@ private:
 
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* lut_textures;
-    Shader* m_deferred_lighting_pass_shader;
+    Shader* m_uplifting_shader;
+    Shader* m_final_pass_shader;
     colorspace working_colorspace;
     unsigned int m_fullscreen_vao;
     unsigned int tex_test;
@@ -49,6 +50,7 @@ private:
     void init_fullscreen_quad();
     unsigned int texture_from_file(const char* path, const std::string& directory);
     void lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables);
+    void reload_shaders();
 };
 
 #endif

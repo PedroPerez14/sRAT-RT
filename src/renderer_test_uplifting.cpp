@@ -1,5 +1,9 @@
-#include <sRAT-RT/renderer_test_uplifting.h>
+#include <imgui.cpp>
+#include <imgui_impl_glfw.h>
 #include <sRAT-RT/stb_image.h>
+#include <imgui_impl_opengl3.h>
+#include <sRAT-RT/renderer_test_uplifting.h>
+
 
 RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_h, 
                     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
@@ -74,6 +78,62 @@ void RendererTestUplifting::render_scene(Scene* scene) const
 
     // We don't call glfwSwapBuffers here, 
     // App::run() is already doing it on its rendering loop, so we're done!
+}
+
+bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format)
+{
+	if (!display_format)
+		display_format = "%.3f";
+
+	char text_buf[64] = {};
+    
+	ImFormatString(text_buf, IM_ARRAYSIZE(text_buf), display_format, *v);
+
+	// Map from [v_min,v_max] to [0,N]
+	const int countValues = int((v_max-v_min)/v_step);
+	int v_i = int((*v - v_min)/v_step);
+	const bool value_changed = ImGui::SliderInt(label, &v_i, 0, countValues, text_buf);
+
+	// Remap from [0,N] to [v_min,v_max]
+	*v = v_min + float(v_i) * v_step;
+	return value_changed;
+}
+
+void RendererTestUplifting::render_ui()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    //ImGui::SliderInt("Number of Wavelengths: ", &num_wavelengths, 4, 40, "%d");
+    static bool showDemo = false;
+    ImGui::Begin("Example");
+    ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
+    ImGui::Checkbox("Do spectral rendering", &do_spectral);
+    if(do_spectral)
+    {
+        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 40, 4, "%d");
+        if(ImGui::SliderFloat("min_wl", &wl_min, 300, 800))
+            if(wl_min > wl_max)
+                wl_max = wl_min;
+        if(ImGui::SliderFloat("max_wl", &wl_max, 300, 800))
+            if(wl_max < wl_min)
+                wl_min = wl_max;
+    }
+    
+    if (ImGui::Button("Show/Hide ImGui demo"))
+      showDemo = !showDemo;
+    ImGui::End();
+    if (showDemo)
+      ImGui::ShowDemoWindow(&showDemo);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void RendererTestUplifting::handle_resize(int w, int h)
+{
+    m_deferred_framebuffer->resize(w, h);
 }
 
 void RendererTestUplifting::set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height) const

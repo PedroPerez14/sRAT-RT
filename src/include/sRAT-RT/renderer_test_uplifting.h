@@ -21,6 +21,10 @@ public:
     /// @param scene 
     void render_scene(Scene* scene) const;
 
+    void render_ui();
+
+    void handle_resize(int w, int h);
+
     colorspace get_colorspace() const;
     void set_colorspace(colorspace _c);
 
@@ -40,6 +44,7 @@ private:
     unsigned int m_fullscreen_vao;
     unsigned int tex_test;
     unsigned int tex_lut;
+    bool do_spectral;           // if false, we will just render to rgb
     int num_wavelengths;
     float wl_min;
     float wl_max;

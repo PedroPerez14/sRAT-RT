@@ -1,5 +1,8 @@
 #include <string>
 #include <iostream>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <sRAT-RT/app.h>
 #include <sRAT-RT/input.h>
 #include <sRAT-RT/stb_image.h>
@@ -29,10 +32,20 @@ const unsigned int& height, const char* window_name)
     return window;
 }
 
+void init_imgui(GLFWwindow* window)
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 450 core");
+    ImGui::StyleColorsClassic();
+}
+
 // Callbacks //TODO: Add more flexibility to assign callbacks for different camera behaviors?
 void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    renderer->handle_resize(width, height);
 }
 
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -164,7 +177,7 @@ bool App::init()
 	glEnable(GL_DEPTH_TEST);
 
     // Set cursor to be locked in hte middle of the window
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
 
     // Set user pointer to this class so that we can register the callbacks properly
     glfwSetWindowUserPointer(window, this);
@@ -184,6 +197,8 @@ bool App::init()
                                         settings->get_wl_min(), settings->get_wl_max());
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
+
+    init_imgui(window);
 
     return true;
 }
@@ -205,6 +220,8 @@ void App::run()
         //      of more renderers with different passes each
         renderer->render_scene(scene);
 
+        renderer->render_ui();
+
         glfwSwapBuffers(window);
 		glfwPollEvents();
     }
@@ -214,5 +231,8 @@ void App::cleanup()
 {
     /// TODO: Should I free memory here? Or maybe once we end execution in the destructors?
     glfwTerminate();
-    // ...
+    // Terminate ImGui execution properly and cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }

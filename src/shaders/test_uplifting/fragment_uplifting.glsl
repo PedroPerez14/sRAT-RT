@@ -128,8 +128,8 @@ void main()
     float _r = 0.58431;
     float _g = 0.4902;
     float _b = 0.43922;
-    vec3 color_hardcoded = vec3(_r, _g, _b);    // use color_rgb later after debugging
-    vec3 coeffs = fetch_coeffs_from_lut(color_hardcoded);
+    //////////////vec3 color_hardcoded = vec3(_r, _g, _b);    // use color_rgb later after debugging
+    vec3 coeffs = fetch_coeffs_from_lut(color_rgb);
     
     for(int i = 0; i < min(n_wls, 12); i++)
     {
@@ -142,12 +142,12 @@ void main()
             int i = 0;                          // The index of the biggest color, also the lut to be consulted
             for(int j=1; j < 3; j++)
             {
-                if(color_hardcoded[j] >= color_hardcoded[i])
+                if(color_rgb[j] >= color_rgb[i])
                 {
                     i = j;
                 }
             }
-            float z = color_hardcoded[i];
+            float z = color_rgb[i];
             float _z = rgb2spec_find_interval(z);
             uplift_wl_4_7.rgba = vec4(z,z,_z,_z);//S(coeffs, _WAVELENGTH);
         }

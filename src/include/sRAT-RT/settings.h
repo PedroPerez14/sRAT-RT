@@ -8,6 +8,7 @@ class Settings
 {
 
 private:
+    std::string path_response_curves;
     std::string path_LUTs_uplifting;
     std::string file_extension_LUTs_uplifting;
     std::string scene_to_load;                          // TODO: Not supported yet, will change it
@@ -28,6 +29,7 @@ public:
     bool load_settings(const std::string& config_file); // Check if settings were loaded, if not, defaults will be used
     bool save_settings(const std::string& config_file); // Check if saved correctly, it might generate a corrupt file
 
+    std::string get_path_response_curves() const;
     std::string get_path_LUTs() const;
     std::string get_file_extension_LUTs() const;
     std::string get_scene() const;
@@ -39,6 +41,7 @@ public:
     float get_wl_max() const;
     std::string get_window_name() const;
 
+    void set_path_response_curves(std::string path);
     void set_path_LUTs(std::string path);
     void set_file_extension_LUTs(std::string ext);
     void set_scene(std::string scene);

@@ -203,7 +203,7 @@ void main()
 
     vec3 color_hardcoded = vec3(_r, _g, _b);    // use color_rgb later after debugging
 
-    vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_hardcoded);
+    vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
     //vec3 coeffs = fetch_coeffs_from_lut_opengl_interp(color_hardcoded);
     
     for(int i = 0; i < min(n_wls, 12); i++)
@@ -217,13 +217,13 @@ void main()
             int _i = 0;                          // The index of the biggest color, also the lut to be consulted
             for(int j=1; j < 3; j++)
             {
-                if(color_hardcoded[j] >= color_hardcoded[_i])
+                if(color_rgb[j] >= color_rgb[_i])
                 {
                     _i = j;
                 }
             }
 
-            float z = color_hardcoded[_i];
+            float z = color_rgb[_i];
             float _z = scale(z * float(float(res) - 1.0));
             uplift_wl_4_7.rgba = vec4(z, z, _z, _z);
             //uplift_wl_4_7[i % 4] = S(coeffs, _WAVELENGTH);

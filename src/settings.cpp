@@ -56,6 +56,8 @@ bool Settings::load_settings(const std::string& config_file)
     // Read values
     if(ini.has("SETTINGS"))
     {
+         if(ini["SETTINGS"].has("path_response_curves"))
+            path_LUTs_uplifting = ini["SETTINGS"]["path_response_curves"];
         if(ini["SETTINGS"].has("path_LUTs_uplifting"))
             path_LUTs_uplifting = ini["SETTINGS"]["path_LUTs_uplifting"];
         if(ini["SETTINGS"].has("file_extension_LUTs_uplifting"))
@@ -77,7 +79,7 @@ bool Settings::load_settings(const std::string& config_file)
             }
         }
         if(ini["SETTINGS"].has("num_wavelengths"))
-            num_wavelengths = std::stoul(ini["SETTINGS"]["num_wavelengths"]);
+            num_wavelengths = std::atoi(ini["SETTINGS"]["num_wavelengths"].c_str());
         if(ini["SETTINGS"].has("window_width"))
             num_wavelengths = std::stoul(ini["SETTINGS"]["window_width"]);
         if(ini["SETTINGS"].has("window_height"))
@@ -105,6 +107,7 @@ bool Settings::save_settings(const std::string& config_file)
     mINI::INIStructure ini;
 
     // Populate it with our data
+    ini["SETTINGS"]["path_response_curves"] = path_response_curves;
     ini["SETTINGS"]["path_LUTs_uplifting"] = path_LUTs_uplifting;
     ini["SETTINGS"]["file_extension_LUTs_uplifting"] = file_extension_LUTs_uplifting;
     ini["SETTINGS"]["scene_to_load"] = scene_to_load;
@@ -127,6 +130,10 @@ bool Settings::save_settings(const std::string& config_file)
 
 
 // Getters
+std::string Settings::get_path_response_curves() const
+{
+    return path_response_curves;
+}
 
 std::string Settings::get_path_LUTs() const
 {
@@ -179,6 +186,10 @@ std::string Settings::get_window_name() const
 }
 
 // Setters
+void Settings::set_path_response_curves(std::string path)
+{
+    path_response_curves = path;
+}
 
 void Settings::set_path_LUTs(std::string path)
 {

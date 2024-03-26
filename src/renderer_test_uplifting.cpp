@@ -25,7 +25,7 @@ RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_
     num_wavelengths = n_wls;
     this->wl_min = wl_min;
     this->wl_max = wl_max;
-
+    sampling_strat = (int)STRAT_EQUISPACED;
     init_fullscreen_quad();
 }
 
@@ -119,6 +119,8 @@ void RendererTestUplifting::render_ui()
         if(ImGui::SliderFloat("max_wl", &wl_max, 300, 800))
             if(wl_max < wl_min)
                 wl_min = wl_max;
+        
+        ImGui::SliderInt("wl selection strategy", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str());
     }
     
     if (ImGui::Button("Show/Hide ImGui demo"))

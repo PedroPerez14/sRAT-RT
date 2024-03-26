@@ -26,6 +26,8 @@ private:
     float m_deltatime;
     float m_lastframe_time;
 
+    bool sleep_rendering;       // If we minimized the window, don't render or it'll crash
+
     struct Mouse_data
     {
         float lastX = 400;

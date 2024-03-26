@@ -36,6 +36,10 @@ private:
         int res;                        // N
     };
 
+    /// TODO: Define more than 1 strategy for sampling wavelengths!
+    const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
+    const std::string wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "ALT_1", "ALT_2" };
+
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* lut_textures;
     Shader* m_uplifting_shader;
@@ -48,6 +52,7 @@ private:
     int num_wavelengths;
     float wl_min;
     float wl_max;
+    int sampling_strat;
 
     void set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height) const;
     void set_scene_lighting_uniforms(Shader* shader, Camera* cam) const;

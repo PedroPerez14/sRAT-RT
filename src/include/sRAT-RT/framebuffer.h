@@ -4,6 +4,7 @@
 /// Credits for this file: Néstor Monzón (gracias néstor)
 
 #include <array>
+#include <algorithm>
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>

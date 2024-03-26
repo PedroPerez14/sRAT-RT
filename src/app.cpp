@@ -44,8 +44,11 @@ void init_imgui(GLFWwindow* window)
 // Callbacks //TODO: Add more flexibility to assign callbacks for different camera behaviors?
 void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    sleep_rendering = false;
     glViewport(0, 0, width, height);
     renderer->handle_resize(width, height);
+    if(width == 0 && height == 0)
+        sleep_rendering = true;
 }
 
 void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -200,6 +203,8 @@ bool App::init()
 
     init_imgui(window);
 
+    sleep_rendering = false;
+
     return true;
 }
 
@@ -213,16 +218,22 @@ void App::run()
 {
     while(!glfwWindowShouldClose(window))
     {
-        deltatime_frame_tick();
-        process_input(window, scene->get_camera(), m_deltatime);
+        if(!sleep_rendering)
+        {
+            deltatime_frame_tick();
+            process_input(window, scene->get_camera(), m_deltatime);
 
-        // Renderer virtual class added to allow easy implementation 
-        //      of more renderers with different passes each
-        renderer->render_scene(scene);
+            // Renderer virtual class added to allow easy implementation 
+            //      of more renderers with different passes each
+            renderer->render_scene(scene);
 
-        renderer->render_ui();
+            /// TODO: Do the same and make every renderer hold a reference
+            //          to an UI class that displays the corresponding UI ??
+            renderer->render_ui();
 
-        glfwSwapBuffers(window);
+            glfwSwapBuffers(window);
+        }
+        
 		glfwPollEvents();
     }
 }

@@ -112,7 +112,7 @@ void RendererTestUplifting::render_ui()
     ImGui::Checkbox("Do spectral rendering", &do_spectral);
     if(do_spectral)
     {
-        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 40, 4, "%d");
+        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 40, 4, "%f.2");
         if(ImGui::SliderFloat("min_wl", &wl_min, 300, 800))
             if(wl_min > wl_max)
                 wl_max = wl_min;

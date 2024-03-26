@@ -133,6 +133,12 @@ void App::load_luts(const std::string& dir, const std::string& ext)
     }
 }
 
+void App::load_response_curves(const std::string& path_responses)
+{
+    /// TODO: Tinydir para iterar todos los csv de aquí y cargarlos  hehehehheh
+}
+
+
 void App::deltatime_frame_tick()
 {
     float curr_frame_time = glfwGetTime();
@@ -193,6 +199,8 @@ bool App::init()
 
 	// Register Scroll zoom callback
 	glfwSetScrollCallback(window, handle_mouse_scroll);
+
+    load_response_curves(settings->get_path_response_curves());
 
     //renderer = new RendererDeferredAndForward(settings->get_window_width(), settings->get_window_height());
     renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height(), 

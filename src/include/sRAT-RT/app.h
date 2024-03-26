@@ -7,6 +7,7 @@
 #include <rgb2spec/rgb2spec.h>
 #include <sRAT-RT/colorspace.h>
 #include <sRAT-RT/framebuffer.h>
+#include <sRAT-RT/response_curve.h>
 
 #define GLFW_INCLUDE_NONE
 
@@ -22,6 +23,7 @@ private:
     GLFWwindow* window;
     Renderer* renderer;
     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables;
+    std::vector<ResponseCurve*> response_curves;
 
     float m_deltatime;
     float m_lastframe_time;
@@ -36,6 +38,7 @@ private:
     } mouse_data;
 
     void load_luts(const std::string& dir, const std::string& ext);
+    void load_response_curves(const std::string& path_responses);
 
     void deltatime_frame_tick();    // Update deltatime and lastframe time values
     void process_input(GLFWwindow* window, Camera* camera, float deltaTime);

@@ -2,11 +2,12 @@
 #include <imgui_impl_glfw.h>
 #include <sRAT-RT/stb_image.h>
 #include <imgui_impl_opengl3.h>
+#include <sRAT-RT/response_curve.h>
 #include <sRAT-RT/renderer_test_uplifting.h>
-
 
 RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_h, 
                     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
+                    std::unordered_map<std::string, ResponseCurve*>* response_curves, 
                     colorspace _colorspace, int n_wls, float wl_min, float wl_max)
 {
     m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();
@@ -21,6 +22,7 @@ RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_
     tex_test = texture_from_file("container.jpg", "../resources/textures");
     // Now, initialize the 3D textures from the LUTs we loaded as 1D arrays
     lut_textures_create(look_up_tables);
+    response_curves_render = response_curves;
     working_colorspace = _colorspace;
     num_wavelengths = n_wls;
     this->wl_min = wl_min;
@@ -83,7 +85,7 @@ void RendererTestUplifting::render_scene(Scene* scene) const
 bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format)
 {
 	if (!display_format)
-		display_format = "%.3f";
+		display_format = "%d";
 
 	char text_buf[64] = {};
     
@@ -112,7 +114,7 @@ void RendererTestUplifting::render_ui()
     ImGui::Checkbox("Do spectral rendering", &do_spectral);
     if(do_spectral)
     {
-        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 40, 4, "%f.2");
+        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 40, 4, "%d");
         if(ImGui::SliderFloat("min_wl", &wl_min, 300, 800))
             if(wl_min > wl_max)
                 wl_max = wl_min;

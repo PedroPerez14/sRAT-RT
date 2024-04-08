@@ -1,8 +1,13 @@
 #include <string>
 #include <iostream>
+#include <algorithm>
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+
+#include <tinydir/tinydir.h>
+
 #include <sRAT-RT/app.h>
 #include <sRAT-RT/input.h>
 #include <sRAT-RT/stb_image.h>
@@ -135,9 +140,47 @@ void App::load_luts(const std::string& dir, const std::string& ext)
 
 void App::load_response_curves(const std::string& path_responses)
 {
-    /// TODO: Tinydir para iterar todos los csv de aquí y cargarlos  hehehehheh
-}
+    response_curves = new std::unordered_map<std::string, ResponseCurve*>();
+    response_curves->empty();
 
+    tinydir_dir dir;
+    int i;
+
+    // tinydir needs a const TCHAR* so we have to do a weird conversion
+    TCHAR *path_tchar=new TCHAR[path_responses.size()+1];
+    path_tchar[path_responses.size()]=0;
+    std::copy(path_responses.begin(),path_responses.end(),path_tchar);
+
+    tinydir_open_sorted(&dir, path_tchar);
+
+    for (i = 0; i < dir.n_files; i++)
+    {
+        tinydir_file file;
+        tinydir_readfile_n(&dir, &file, i);
+
+        // Convert filename form TCHAR to string in order to 
+        // check if the file extension is .csv and load that curve
+        std::string test;
+        #if defined(UNICODE) || defined(_UNICODE)
+            std::wstring _test = file.name;
+            size_t size;
+            test.resize(_test.length());
+            wcstombs_s(&size, &test[0], test.size() + 1, _test.c_str(), _test.size());
+        #else
+            test = file.name;
+        #endif
+        std::string extension = test.substr(std::max(0, (int)test.length() - 4));
+
+        // Check extension and load curve in case it's .csv
+        if(extension == ".csv")
+        {
+            std::cout << "APP::STATUS::INIT::LOAD_RESPONSE_CURVES: Loading Response Curve " << test << std::endl;
+            ResponseCurve* rc = new ResponseCurve(std::string(path_responses + test));
+            (*response_curves)[test] = rc;
+        }
+    }
+    tinydir_close(&dir);
+}
 
 void App::deltatime_frame_tick()
 {
@@ -204,8 +247,8 @@ bool App::init()
 
     //renderer = new RendererDeferredAndForward(settings->get_window_width(), settings->get_window_height());
     renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height(), 
-                                        look_up_tables, settings->get_colorspace(), settings->get_num_wavelengths(), 
-                                        settings->get_wl_min(), settings->get_wl_max());
+                                        look_up_tables, response_curves, settings->get_colorspace(), 
+                                        settings->get_num_wavelengths(), settings->get_wl_min(), settings->get_wl_max());
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
 

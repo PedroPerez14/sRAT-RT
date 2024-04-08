@@ -37,6 +37,7 @@ add_executable(sRAT-RT
         # Header files
         src/include/mINI/mINI.h
         src/include/rgb2spec/rgb2spec.h
+        src/include/tinydir/tinydir.h
         src/include/sRAT-RT/camera.h
         src/include/sRAT-RT/shader.h
         src/include/sRAT-RT/stb_image.h

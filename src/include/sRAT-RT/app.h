@@ -23,7 +23,7 @@ private:
     GLFWwindow* window;
     Renderer* renderer;
     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables;
-    std::vector<ResponseCurve*> response_curves;
+    std::unordered_map<std::string, ResponseCurve*>* response_curves;
 
     float m_deltatime;
     float m_lastframe_time;

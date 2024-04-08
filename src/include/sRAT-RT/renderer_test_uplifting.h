@@ -15,7 +15,7 @@ class RendererTestUplifting : public Renderer
 public:
 
     RendererTestUplifting(unsigned int fb_w, unsigned int fb_h, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
-                            colorspace _colorspace=SRGB, int n_wls=40, float wl_min=360.0, float wl_max=830.0);
+                            std::unordered_map<std::string, ResponseCurve*>* response_curves, colorspace _colorspace=SRGB, int n_wls=40, float wl_min=360.0, float wl_max=830.0);
 
     /// @brief This renderer will render a texture in fullscreen, for some testing
     /// @param scene 
@@ -42,6 +42,7 @@ private:
 
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* lut_textures;
+    std::unordered_map<std::string, ResponseCurve*>* response_curves_render;
     Shader* m_uplifting_shader;
     Shader* m_final_pass_shader;
     colorspace working_colorspace;

@@ -86,8 +86,8 @@ void ResponseCurve::generate_gltexture_from_data()
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB32F, n_samples, 0, GL_RGB, GL_FLOAT, buffer_tex);
     delete buffer_tex;
 
-    std::cout << "Created 1D texture for response curve with " << n_samples << " samples, from "
-    << wl_min << "nm to " << wl_max << "nm. RGB[0] : " << response_sample_vector[0].responses[0] 
-    << ", " << response_sample_vector[0].responses[1] << ", " << response_sample_vector[0].responses[2] 
-    << std::endl;
+    // std::cout << "Created 1D texture for response curve with " << n_samples << " samples, from "
+    // << wl_min << "nm to " << wl_max << "nm. RGB[0] : " << response_sample_vector[0].responses[0] 
+    // << ", " << response_sample_vector[0].responses[1] << ", " << response_sample_vector[0].responses[2] 
+    // << std::endl;
 }

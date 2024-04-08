@@ -4,3 +4,4 @@ resources/objects
 resources/objects/*
 .vscode/
 .vscode/*
+resources/response_curves/

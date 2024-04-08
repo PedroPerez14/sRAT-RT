@@ -12,6 +12,7 @@ Settings::Settings()
 void Settings::set_defaults()
 {
     // Default settings
+    path_response_curves = "../resources/response_curves/";
     path_LUTs_uplifting = "./";
     file_extension_LUTs_uplifting = ".coeff";
     scene_to_load = "./scenes/test_uplifting.scene";    // DUMMY, NOT IMPLEMENTED YET
@@ -81,9 +82,9 @@ bool Settings::load_settings(const std::string& config_file)
         if(ini["SETTINGS"].has("num_wavelengths"))
             num_wavelengths = std::atoi(ini["SETTINGS"]["num_wavelengths"].c_str());
         if(ini["SETTINGS"].has("window_width"))
-            num_wavelengths = std::stoul(ini["SETTINGS"]["window_width"]);
+            window_width = std::stoul(ini["SETTINGS"]["window_width"]);
         if(ini["SETTINGS"].has("window_height"))
-            num_wavelengths = std::stoul(ini["SETTINGS"]["window_height"]);
+            window_height = std::stoul(ini["SETTINGS"]["window_height"]);
         if(ini["SETTINGS"].has("wl_min"))
             wl_min = std::stof(ini["SETTINGS"]["wl_min"]);
         if(ini["SETTINGS"].has("wl_max"))

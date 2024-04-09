@@ -15,8 +15,15 @@ class Shader
 public:
 	unsigned int ID;
 
+	// this should be private but it's a quick fix to enable hot shader reloading
+	const char* m_vertexPath;
+	const char* m_fragmentPath;
+
 	Shader(const char* vertexPath, const char* fragmentPath)
 	{
+		m_vertexPath = vertexPath;
+		m_fragmentPath = fragmentPath;
+		
 		std::string vertexCode;
 		std::string fragmentCode;
 		std::ifstream vShaderFile;

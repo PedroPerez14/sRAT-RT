@@ -136,11 +136,15 @@ void RendererTestUplifting::render_ui()
             auto iter = response_curves_render->begin();
             std::advance(iter,  selected_resp_curve);
             // std::cout << "RESPONSE CURVE SELECTED: " << response_curve_names[selected_resp_curve] << ", " << iter->first << ", " << response_curves_render->at(response_curve_names[selected_resp_curve]) << std::endl;
-            
         }
 
     }
     
+    if(ImGui::Button("Reload Shaders"))
+    {
+        reload_shaders();
+    }
+
     if (ImGui::Button("Show/Hide ImGui demo"))
       showDemo = !showDemo;
     ImGui::End();
@@ -300,18 +304,22 @@ void RendererTestUplifting::set_colorspace(colorspace _c)
     working_colorspace = _c;
 }
 
+/// TODO: Needs to be fixed, pressing the button makes the program explode
 void RendererTestUplifting::reload_shaders()
 {
-    delete m_uplifting_shader;
-    delete m_final_pass_shader;
-    
-    new Shader(
-    "../src/shaders/test_uplifting/vertex_uplifting.glsl", 
-    "../src/shaders/test_uplifting/fragment_uplifting.glsl");
+    const char* v_path = m_uplifting_shader->m_vertexPath;
+    const char* f_path = m_uplifting_shader->m_fragmentPath;
+    Shader* new_uplifting_shader = new Shader(v_path, f_path);
+    Shader* old_uplifting_shader = m_uplifting_shader;
+    m_uplifting_shader = new_uplifting_shader;
+    delete old_uplifting_shader;
 
-    m_final_pass_shader = new Shader(
-    "../src/shaders/test_uplifting/vertex_uplifting_pass2.glsl", 
-    "../src/shaders/test_uplifting/fragment_uplifting_pass2.glsl");
+    v_path = m_final_pass_shader->m_vertexPath;
+    f_path = m_final_pass_shader->m_fragmentPath;
+    Shader* new_final_pass_shader = new Shader(v_path, f_path);
+    Shader* old_final_pass_shader = m_final_pass_shader;
+    m_final_pass_shader = new_final_pass_shader;
+    delete old_final_pass_shader;
 }
 
 void RendererTestUplifting::populate_resp_curves_list()

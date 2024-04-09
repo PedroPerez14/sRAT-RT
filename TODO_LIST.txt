@@ -17,11 +17,12 @@
 
 
 [9-4-23]
-UI Work Pending: - I can choose response curves now, should I create a preview for them?
-                 - Should I let users choose a colorspace to render to? Or always to sRGB?
-                 - Put a button to hot reload shaders, I already have the function to do so
+UI Work Pending: - I can choose response curves now, should I create a preview for them?        [Nah, maybe much later in development but not for now]
+                 - Should I let users choose a colorspace to render to? Or always to sRGB?      [For now stick to rgb, later I'll have to do it, I guess]
+                 - Put a button to hot reload shaders, I already have the function to do so     [DONE, THERE WAS A BUG BUT IT'S FIXED NOW]
 
-Other tasks:     - Change fragment shader and add the parameters I've enabled to be changed via the UI (response curve as tex1d, #wls, strat, etc.)
+Other tasks:     - In order to change the number of wavelengths I'll have to change the number of textures in the GBuffer (right ?)
+                 - Change fragment shader and add the parameters I've enabled to be changed via the UI (response curve as tex1d, #wls, strat, etc.)
                  - Change fragment shader and add calculations to go from spec2rgb (multiply by resp. curve)
-                 - Add CIE 193(1 or 2?) (also more CIE curves?) to the available response curves
+                 - Add CIE 193(1 or 2?) (also more CIE curves i.e 2006?) to the available response curves
                  - Add a few materials and a test scene with a single dir light, I guess (not this week, unlikely to happen)

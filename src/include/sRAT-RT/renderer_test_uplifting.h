@@ -54,6 +54,9 @@ private:
     float wl_min;
     float wl_max;
     int sampling_strat;
+    std::vector<std::string> response_curve_names;
+    int selected_resp_curve = 0;
+
 
     void set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height) const;
     void set_scene_lighting_uniforms(Shader* shader, Camera* cam) const;
@@ -62,6 +65,7 @@ private:
     unsigned int texture_from_file(const char* path, const std::string& directory);
     void lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables);
     void reload_shaders();
+    void populate_resp_curves_list();
 };
 
 #endif

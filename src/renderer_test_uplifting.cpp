@@ -23,6 +23,8 @@ RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_
     // Now, initialize the 3D textures from the LUTs we loaded as 1D arrays
     lut_textures_create(look_up_tables);
     response_curves_render = response_curves;
+    selected_resp_curve = 0;
+    populate_resp_curves_list();
     working_colorspace = _colorspace;
     num_wavelengths = n_wls;
     this->wl_min = wl_min;
@@ -101,6 +103,11 @@ bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, f
 	return value_changed;
 }
 
+bool Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items = -1)
+{
+   return ImGui::Combo(label, current_item, [](void* data, int idx, const char** out_text) { *out_text = ((const std::vector<std::string>*)data)->at(idx).c_str(); return true; }, (void*)&items, items_count, height_in_items);
+}
+
 void RendererTestUplifting::render_ui()
 {
     ImGui_ImplOpenGL3_NewFrame();
@@ -123,6 +130,15 @@ void RendererTestUplifting::render_ui()
                 wl_min = wl_max;
         
         ImGui::SliderInt("wl selection strategy", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str());
+        
+        if (Combo("response curve", &selected_resp_curve, response_curve_names, response_curve_names.size()))
+        {
+            auto iter = response_curves_render->begin();
+            std::advance(iter,  selected_resp_curve);
+            // std::cout << "RESPONSE CURVE SELECTED: " << response_curve_names[selected_resp_curve] << ", " << iter->first << ", " << response_curves_render->at(response_curve_names[selected_resp_curve]) << std::endl;
+            
+        }
+
     }
     
     if (ImGui::Button("Show/Hide ImGui demo"))
@@ -296,4 +312,14 @@ void RendererTestUplifting::reload_shaders()
     m_final_pass_shader = new Shader(
     "../src/shaders/test_uplifting/vertex_uplifting_pass2.glsl", 
     "../src/shaders/test_uplifting/fragment_uplifting_pass2.glsl");
+}
+
+void RendererTestUplifting::populate_resp_curves_list()
+{
+    response_curve_names.empty();
+
+    for (auto i = response_curves_render->begin(); i != response_curves_render->end(); i++)
+    {
+        response_curve_names.push_back(i->first);
+    }
 }

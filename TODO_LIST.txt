@@ -13,3 +13,15 @@
     5.1.- Do I need it or can it be bypassed by generating fake vertex coords in the deferred lighting shader?
     5.2.- This is going to come back later to bite me in the ass I can see it, clear as day
 6.- Think about more things that are to be done/improved/debugged/worsened
+
+
+
+[9-4-23]
+UI Work Pending: - I can choose response curves now, should I create a preview for them?
+                 - Should I let users choose a colorspace to render to? Or always to sRGB?
+                 - Put a button to hot reload shaders, I already have the function to do so
+
+Other tasks:     - Change fragment shader and add the parameters I've enabled to be changed via the UI (response curve as tex1d, #wls, strat, etc.)
+                 - Change fragment shader and add calculations to go from spec2rgb (multiply by resp. curve)
+                 - Add CIE 193(1 or 2?) (also more CIE curves?) to the available response curves
+                 - Add a few materials and a test scene with a single dir light, I guess (not this week, unlikely to happen)

@@ -15,6 +15,7 @@
 // RENDERERS
 #include <sRAT-RT/renderer_def_fwd.h>
 #include <sRAT-RT/renderer_test_uplifting.h>
+#include <fstream>
 
 GLFWwindow* init_glfw_and_create_window(const unsigned int& width, 
 const unsigned int& height, const char* window_name)
@@ -78,13 +79,28 @@ void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
     scene->get_camera()->ProcessMouseMovement(xoffset, yoffset, false);
 }
 
+void App::read_app_version()
+{
+    std::string line;
+    std::ifstream file("../VERSION");
+    if (file.is_open()) {
+        getline(file, line);
+        std::cout << "APP::INIT::READ_VERSION: Version " << line << std::endl;
+        file.close();
+    }
+    else
+        std::cout << "FILE NOT OPEN" << std::endl;
+    app_version = line;
+}
+
 // Class functions and methods
 
 App::App()
 {
     settings = new Settings();
+    read_app_version();
     window = init_glfw_and_create_window(settings->get_window_width(),
-        settings->get_window_height(), settings->get_window_name().c_str());
+        settings->get_window_height(), (settings->get_window_name() + " " + app_version).c_str());
     
     if(!window)
         exit(1);
@@ -92,8 +108,9 @@ App::App()
 
 App::App(std::string path_settings)
 {
-    // Load the settings
+    // Load the settings and current app version
     settings = new Settings(path_settings);
+    read_app_version();
 
     // Load the uplifting Look Up Tables
     look_up_tables = new std::unordered_map<colorspace, RGB2Spec*>();
@@ -101,7 +118,7 @@ App::App(std::string path_settings)
     
     // And finally, initialize GLFW and create the window (cannot be done before the initialization)
     window = init_glfw_and_create_window(settings->get_window_width(), 
-            settings->get_window_height(), settings->get_window_name().c_str());
+            settings->get_window_height(), (settings->get_window_name() + " " + app_version).c_str());
     if(!window)
         exit(1);        // Can this be recovered somehow instead of killing everything?
 }
@@ -246,9 +263,11 @@ bool App::init()
     load_response_curves(settings->get_path_response_curves());
 
     //renderer = new RendererDeferredAndForward(settings->get_window_width(), settings->get_window_height());
-    renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height(), 
-                                        look_up_tables, response_curves, settings->get_colorspace(), 
-                                        settings->get_num_wavelengths(), settings->get_wl_min(), settings->get_wl_max());
+    renderer = new RendererTestUplifting(settings, look_up_tables, response_curves, app_version);
+    // renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height(), 
+    //                                     look_up_tables, response_curves, app_version, settings->get_colorspace(), 
+    //                                     settings->get_num_wavelengths(), settings->get_wl_min(), settings->get_wl_max());
+    
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
 
@@ -297,4 +316,9 @@ void App::cleanup()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+}
+
+std::string App::get_app_version()
+{
+    return app_version;
 }

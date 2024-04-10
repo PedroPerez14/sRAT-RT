@@ -195,13 +195,6 @@ void main()
 
     // Perform the uplifting here    
     vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
-    // TODO: fetch the coefficients in the texture, based on the color we have
-    // Then do the sigmoid function and evaluate it for the corresponding wavelength
-    float _r = 0.58431;
-    float _g = 0.4902;
-    float _b = 0.43922;
-
-    vec3 color_hardcoded = vec3(_r, _g, _b);    // use color_rgb later after debugging
 
     vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
     //vec3 coeffs = fetch_coeffs_from_lut_opengl_interp(color_hardcoded);

@@ -24,6 +24,7 @@ private:
     Renderer* renderer;
     std::unordered_map<colorspace, RGB2Spec*>* look_up_tables;
     std::unordered_map<std::string, ResponseCurve*>* response_curves;
+    std::string app_version;
 
     float m_deltatime;
     float m_lastframe_time;
@@ -43,6 +44,8 @@ private:
     void deltatime_frame_tick();    // Update deltatime and lastframe time values
     void process_input(GLFWwindow* window, Camera* camera, float deltaTime);
 
+    void read_app_version();
+
 public:
     App();
     App(std::string path_settings);
@@ -56,6 +59,8 @@ public:
     void framebuffer_size_callback(GLFWwindow* window, int width, int height);
     void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
     void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+
+    std::string get_app_version();
 };
 
 #endif

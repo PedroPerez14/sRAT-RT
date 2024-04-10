@@ -5,8 +5,8 @@ uniform int flipY = 0;          // Acts as a bool, is int for possible compatibi
 
 void main()
 {
+    // Generate the UV coordinates for our in-screen quad (2 triangles iirc)
     vec2 pos = vec2(gl_VertexID % 2, gl_VertexID / 2) * 4.0 - 1.0;
-
     fTexcoords = pos * 0.5 + 0.5;
 
     //Account for flipY

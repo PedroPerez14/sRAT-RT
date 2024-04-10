@@ -3,6 +3,7 @@
 #ifndef RENDERER_TEST_UPLIFTING_H
 #define RENDERER_TEST_UPLIFTING_H
 
+#include <sRAT-RT/settings.h>
 #include <sRAT-RT/renderer.h>
 #include <sRAT-RT/colorspace.h>
 #include <rgb2spec/rgb2spec.h>
@@ -14,8 +15,8 @@ class RendererTestUplifting : public Renderer
 {
 public:
 
-    RendererTestUplifting(unsigned int fb_w, unsigned int fb_h, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
-                            std::unordered_map<std::string, ResponseCurve*>* response_curves, colorspace _colorspace=SRGB, int n_wls=40, float wl_min=360.0, float wl_max=830.0);
+    RendererTestUplifting(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
+                std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version);
 
     /// @brief This renderer will render a texture in fullscreen, for some testing
     /// @param scene 
@@ -39,7 +40,7 @@ private:
     /// TODO: Define more than 1 strategy for sampling wavelengths!
     const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
     const std::string wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "ALT_1", "ALT_2" };
-
+    std::string app_version;
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* lut_textures;
     std::unordered_map<std::string, ResponseCurve*>* response_curves_render;

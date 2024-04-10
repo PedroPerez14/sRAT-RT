@@ -5,13 +5,14 @@
 #include <sRAT-RT/response_curve.h>
 #include <sRAT-RT/renderer_test_uplifting.h>
 
-RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_h, 
-                    std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
-                    std::unordered_map<std::string, ResponseCurve*>* response_curves, 
-                    colorspace _colorspace, int n_wls, float wl_min, float wl_max)
+RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
+                std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version)
 {
-    m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();
-    m_deferred_framebuffer->init(fb_w, fb_h);
+    app_version = version;
+    m_deferred_framebuffer = new GLFrameBufferRGBA<NUM_WAVELENGTHS / 4 + 1>();
+    unsigned int width = settings->get_window_width();
+    unsigned int height = settings->get_window_height();
+    m_deferred_framebuffer->init(width, height);
     m_uplifting_shader = new Shader(
     "../src/shaders/test_uplifting/vertex_uplifting.glsl", 
     "../src/shaders/test_uplifting/fragment_uplifting.glsl");
@@ -25,10 +26,10 @@ RendererTestUplifting::RendererTestUplifting(unsigned int fb_w, unsigned int fb_
     response_curves_render = response_curves;
     selected_resp_curve = 0;
     populate_resp_curves_list();
-    working_colorspace = _colorspace;
-    num_wavelengths = n_wls;
-    this->wl_min = wl_min;
-    this->wl_max = wl_max;
+    working_colorspace = settings->get_colorspace();
+    num_wavelengths = settings->get_num_wavelengths();
+    wl_min = settings->get_wl_min();
+    wl_max = settings->get_wl_max();
     sampling_strat = (int)STRAT_EQUISPACED;
     init_fullscreen_quad();
 }
@@ -116,12 +117,13 @@ void RendererTestUplifting::render_ui()
 
     //ImGui::SliderInt("Number of Wavelengths: ", &num_wavelengths, 4, 40, "%d");
     static bool showDemo = false;
-    ImGui::Begin("Example");
+    ImGui::Begin("Config");
+    ImGui::TextUnformatted(("sRAT-RT v" + app_version).c_str());
     ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
     ImGui::Checkbox("Do spectral rendering", &do_spectral);
     if(do_spectral)
     {
-        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 40, 4, "%d");
+        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 200, 4, "%d");
         if(ImGui::SliderFloat("min_wl", &wl_min, 300, 800))
             if(wl_min > wl_max)
                 wl_max = wl_min;
@@ -129,9 +131,9 @@ void RendererTestUplifting::render_ui()
             if(wl_max < wl_min)
                 wl_min = wl_max;
         
-        ImGui::SliderInt("wl selection strategy", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str());
+        ImGui::SliderInt("wl_sample_strat", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str());
         
-        if (Combo("response curve", &selected_resp_curve, response_curve_names, response_curve_names.size()))
+        if (Combo("response_curve", &selected_resp_curve, response_curve_names, response_curve_names.size()))
         {
             auto iter = response_curves_render->begin();
             std::advance(iter,  selected_resp_curve);
@@ -139,12 +141,20 @@ void RendererTestUplifting::render_ui()
         }
 
     }
-    
-    if(ImGui::Button("Reload Shaders"))
+
+    ImGui::SeparatorText(" OTHER CONFIGURATION: ");
+    if(ImGui::Button("Reload Renderer Shaders"))
     {
         reload_shaders();
     }
+    ImGui::SameLine();
+    if(ImGui::Button("Reload Per-Object Shaders"))
+    {
+        /// TODO: Do something here?
+        std::cout << "Work in progress!" << std::endl;
+    }
 
+    ImGui::SeparatorText(" IMGUI DEMO (DELETE LATER): ");
     if (ImGui::Button("Show/Hide ImGui demo"))
       showDemo = !showDemo;
     ImGui::End();

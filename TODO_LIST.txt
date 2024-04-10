@@ -12,14 +12,14 @@
 5.- What about the m_fullscreen_vao? -- Do this second, needed to render properly
     5.1.- Do I need it or can it be bypassed by generating fake vertex coords in the deferred lighting shader?
     5.2.- This is going to come back later to bite me in the ass I can see it, clear as day
-6.- Think about more things that are to be done/improved/debugged/worsened
 
 
-
-[9-4-23]
-UI Work Pending: - I can choose response curves now, should I create a preview for them?        [Nah, maybe much later in development but not for now]
-                 - Should I let users choose a colorspace to render to? Or always to sRGB?      [For now stick to rgb, later I'll have to do it, I guess]
-                 - Put a button to hot reload shaders, I already have the function to do so     [DONE, THERE WAS A BUG BUT IT'S FIXED NOW]
+[10-4-23]
+UI Work Pending: - Allow per-object shader hot reloading? Now I'm only doing it for the renderer shaders    [Decide later, not now]
+                 - Should I let users choose a colorspace to render to? Or always to sRGB?                  [For now stick to rgb, later I'll have to do it, I guess]
+                 - Let users choose the shaders!!! (all of them or only the ones in the scene?)             [Would be very cool, near future?]
+                            > This will increase the size of render_ui(), create separate RendererUI class? [Hmmm, I'll have to think this one]
+                            > Combine with 1. in the above list
 
 Other tasks:     - In order to change the number of wavelengths I'll have to change the number of textures in the GBuffer (right ?)
                  - Change fragment shader and add the parameters I've enabled to be changed via the UI (response curve as tex1d, #wls, strat, etc.)

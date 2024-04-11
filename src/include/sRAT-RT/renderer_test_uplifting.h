@@ -8,8 +8,8 @@
 #include <sRAT-RT/colorspace.h>
 #include <rgb2spec/rgb2spec.h>
 
-#define NUM_WAVELENGTHS 12
-#define FRAMEBUFFER_TEX_NUM (NUM_WAVELENGTHS / 4 + 1)
+/// TODO: CHECK THIS (WILL CAUSE PROBLEMS LATER, 100% SURE)
+#define FRAMEBUFFER_TEX_NUM 1
 
 class RendererTestUplifting : public Renderer
 {
@@ -37,9 +37,12 @@ private:
         int res;                        // N
     };
 
-    /// TODO: Define more than 1 strategy for sampling wavelengths!
+    // Wavelength sampling stuff, it's very dirty to be honest but I can't come up with something better for now
     const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
     const std::string wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "ALT_1", "ALT_2" };
+    float* (RendererTestUplifting::*wl_sampling_funcs[STRAT_COUNT])() = 
+    { &RendererTestUplifting::sample_equispaced, &RendererTestUplifting::sample_alt1, &RendererTestUplifting::sample_alt2 };
+
     std::string app_version;
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* lut_textures;
@@ -59,7 +62,6 @@ private:
     std::vector<std::string> response_curve_names;
     int selected_resp_curve = 0;
 
-
     void set_shader_camera_uniforms(Shader* shader, Camera* cam, int width, int height) const;
     void set_scene_lighting_uniforms(Shader* shader, Camera* cam) const;
     void render_quad() const;
@@ -69,6 +71,10 @@ private:
     void reload_shaders();
     void populate_resp_curves_list();
     void gen_sampled_wls_tex1d();
+
+    float* sample_equispaced();
+    float* sample_alt1();         // dummy, will change it in the future
+    float* sample_alt2();         // dummy, will change it in the future
 };
 
 #endif

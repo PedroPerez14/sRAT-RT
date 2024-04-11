@@ -9,7 +9,7 @@ RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_
                 std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version)
 {
     app_version = version;
-    m_deferred_framebuffer = new GLFrameBufferRGBA<NUM_WAVELENGTHS / 4 + 1>();
+    m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();  // check tex number
     unsigned int width = settings->get_window_width();
     unsigned int height = settings->get_window_height();
     m_deferred_framebuffer->init(width, height);
@@ -31,7 +31,18 @@ RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_
     num_wavelengths = settings->get_num_wavelengths();
     wl_min = settings->get_wl_min();
     wl_max = settings->get_wl_max();
+
+    // Also, check boundaries here!
+    float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+    float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+    if(wl_max > wl_max_rc || wl_max < wl_min_rc)
+                wl_max = wl_max_rc;
+            if(wl_min < wl_min_rc || wl_min > wl_max_rc)
+                wl_min = wl_min_rc;
+
+
     sampling_strat = (int)STRAT_EQUISPACED;
+    glGenTextures(1, &sampled_wls_tex_id);
     init_fullscreen_quad();
 }
 
@@ -41,7 +52,6 @@ void RendererTestUplifting::render_scene(Scene* scene)
     {
         resample_wls = false;
         gen_sampled_wls_tex1d();
-        /// TODO: gen_sampled_wls_tex1d();
     }
 
     Camera* cam = scene->get_camera();
@@ -88,7 +98,7 @@ void RendererTestUplifting::render_scene(Scene* scene)
     m_final_pass_shader->use();
     m_final_pass_shader->setInt("show_original_tex_or_spec2rgb", 1);
     
-    for(int i = 0; i < 4; i++)
+    for(int i = 0; i < FRAMEBUFFER_TEX_NUM; i++)
     {
         GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
         glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i));
@@ -254,6 +264,8 @@ void RendererTestUplifting::set_scene_lighting_uniforms(Shader* shader, Camera* 
     shader->setInt("n_wls", num_wavelengths);
     shader->setFloat("wl_min", wl_min);
     shader->setFloat("wl_max", wl_max);
+    shader->setFloat("wl_min_resp", response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min());
+    shader->setFloat("wl_max_resp", response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max());
     shader->setInt("res", 64);  // Do not touch, LUT related
 }
 
@@ -375,7 +387,6 @@ void RendererTestUplifting::set_colorspace(colorspace _c)
     working_colorspace = _c;
 }
 
-/// TODO: Needs to be fixed, pressing the button makes the program explode
 void RendererTestUplifting::reload_shaders()
 {
     const char* v_path = m_uplifting_shader->m_vertexPath;
@@ -405,6 +416,50 @@ void RendererTestUplifting::populate_resp_curves_list()
 
 void RendererTestUplifting::gen_sampled_wls_tex1d()
 {
-    glDeleteTextures(1, &id);
-    /// TODO: 
+    float* wavelengths = std::invoke(wl_sampling_funcs[sampling_strat], this);
+
+    for(int i = 0; i < num_wavelengths; i++)
+    {
+        std::cout << "WAVELENGTHS[" << i << "]: " << wavelengths[i] << std::endl;
+    }
+
+    glBindTexture(GL_TEXTURE_1D, sampled_wls_tex_id);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, num_wavelengths, 0, GL_RED, GL_FLOAT, wavelengths);
+    delete wavelengths;
+}
+
+float* RendererTestUplifting::sample_equispaced()
+{
+    float* wavelengths = new float[num_wavelengths];
+     for(int i = 0; i < num_wavelengths; i++)
+     {
+         wavelengths[i] = wl_min + (float(i) * ((wl_max - wl_min) / (float)(num_wavelengths - 1)));
+     }
+     return wavelengths;
+}
+
+/// dummy function, change at some point
+float* RendererTestUplifting::sample_alt1()
+{
+    float* wavelengths = new float[num_wavelengths];
+     for(int i = 0; i < num_wavelengths; i++)
+     {
+         wavelengths[i] = wl_max;
+     }
+     return wavelengths;
+}
+
+/// dummy function, change at some point
+float* RendererTestUplifting::sample_alt2()
+{
+    float* wavelengths = new float[num_wavelengths];
+     for(int i = 0; i < num_wavelengths; i++)
+     {
+         wavelengths[i] = wl_min;
+     }
+     return wavelengths;
 }

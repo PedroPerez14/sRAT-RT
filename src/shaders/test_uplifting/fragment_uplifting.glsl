@@ -15,6 +15,8 @@ uniform bool do_spectral_uplifting;
 uniform int n_wls;
 uniform float wl_min;
 uniform float wl_max;
+uniform float wl_min_resp;
+uniform float wl_max_resp;
 uniform int res = 64;
 
 
@@ -193,53 +195,16 @@ vec3 fetch_coeffs_from_lut_opengl_interp(vec3 rgb)
     return coeffs;
 }
 
-float[] sample_wls_equally_spaced(float wl_min, float wl_max, int n_wls)
-{
-    float wavelengths[n_wls];
-    for(int i = 0; i < n_wls; i++)
-    {
-        wavelengths[i] = wl_min + (float(i - 1) * (wl_max - wl_min));
-    }
-    return wavelengths;
-}
-
-float[] sample_wavelengths_to_use(float wl_min, float wl_max, int n_wls, int sample_strat)
-{
-    /// We only have one strat for now, equally spaced along the specified wl range
-    //      Will look into adding more later on, I guess.
-    float wavelengths[n_wls];
-    if(sample_strat == 1)
-    {
-        wavelengths = sample_wls_equally_spaced(wl_min, wl_max, n_wls);
-    }
-    else if(sample_strat == 2)
-    {
-        // Made-up strategy for testing, I´ll add a proper one in the future
-        for (int i = 0; i < n_wls> i++)
-        {
-            wavelengths[i] = wl_min;  // All wavelengths are wl_min (dummy code)
-        }
-    }
-    else //(sample_strat == 3)
-    {
-        // Made-up strategy for testing, I´ll add a proper one in the future
-        for (int i = 0; i < n_wls> i++)
-        {
-            wavelengths[i] = wl_max;  // All wavelengths are wl_max (dummy code)
-        }
-        return wavelengths;
-    }
-}
-
 void main()
 {
     if(do_spectral_uplifting)
     {
-        
-        vec3 color_spectral = vec3(0,0,0);
+        vec3 color_spectral = vec3(0.0, 0.0, 0.0);
+        //float _S;
+        //vec3 response_for_wl;
         for (int i = 0; i < n_wls; i++)
         {
-            float wavelength = texture(tex_wavelengths, i);
+            float wavelength = texture(tex_wavelengths, (float(i) / float(n_wls))).r;
             // Perform the uplifting step. First sample the texture normally
             vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
 
@@ -247,14 +212,19 @@ void main()
             vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
 
             float _S = S(coeffs, wavelength);
-            vec3 response_for_wl = texture(resp_curve, wavelength).rgb;
+
+            float wl_range = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
+            vec3 response_for_wl = texture(resp_curve, wl_range).rgb;
 
             // Cumulative sum for Riemann integration
-            color_spectral = color_spectral + ( _S * response_for_wl );
+            color_spectral.rgb = color_spectral.rgb + vec3(_S * response_for_wl.r, _S * response_for_wl.g, _S * response_for_wl.b);
         }
 
         // Riemann sum final step: Divide by number and size of steps
-        out_color = vec4(((wl_max - wl_min) / float(n_wls) * color_spectral).rgb, 1.0);
+        out_color = vec4( ( ( (wl_max - wl_min) / float(n_wls) ) * color_spectral.rgb), 1.0);
+        float w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), 466.0);
+        //* texture(resp_curve, ((466.0-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb
+        out_color = vec4(w * texture(resp_curve, ((466.0-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
     }
     else
     {

@@ -26,6 +26,7 @@ RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_
     response_curves_render = response_curves;
     selected_resp_curve = 0;
     populate_resp_curves_list();
+    resample_wls = true;
     working_colorspace = settings->get_colorspace();
     num_wavelengths = settings->get_num_wavelengths();
     wl_min = settings->get_wl_min();
@@ -34,10 +35,16 @@ RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_
     init_fullscreen_quad();
 }
 
-void RendererTestUplifting::render_scene(Scene* scene) const
+void RendererTestUplifting::render_scene(Scene* scene)
 {
-    Camera* cam = scene->get_camera();
+    if(resample_wls)
+    {
+        resample_wls = false;
+        gen_sampled_wls_tex1d();
+        /// TODO: gen_sampled_wls_tex1d();
+    }
 
+    Camera* cam = scene->get_camera();
     // now clear the gbuffer and write to it
     m_deferred_framebuffer->bind();
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -63,8 +70,15 @@ void RendererTestUplifting::render_scene(Scene* scene) const
         GL_CHECK(glBindTexture(GL_TEXTURE_3D, lut_3d_ids[i]));
     }
 
-    render_quad();
+    unsigned int r_crv_tex_id = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_tex_id();
+    GL_CHECK(glActiveTexture(GL_TEXTURE4));
+    GL_CHECK(glBindTexture(GL_TEXTURE_1D, r_crv_tex_id));
 
+    GL_CHECK(glActiveTexture(GL_TEXTURE5));
+    GL_CHECK(glBindTexture(GL_TEXTURE_1D, sampled_wls_tex_id));
+
+    render_quad();
+    
     m_deferred_framebuffer->unbind();
 
     // 2. Final pass: Draw into the screen
@@ -120,24 +134,70 @@ void RendererTestUplifting::render_ui()
     ImGui::Begin("Config");
     ImGui::TextUnformatted(("sRAT-RT v" + app_version).c_str());
     ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
-    ImGui::Checkbox("Do spectral rendering", &do_spectral);
+    if(ImGui::Checkbox("Do spectral rendering", &do_spectral))
+    {
+        if(do_spectral)
+        {
+            resample_wls = true;
+        }
+    }
+
     if(do_spectral)
     {
-        SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 200, 4, "%d");
+        if(SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 200, 4, "%d"))
+        {
+            resample_wls = true;
+        }
+
         if(ImGui::SliderFloat("min_wl", &wl_min, 300, 800))
+        {
+            resample_wls = true;
+            float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+            float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+            if(wl_min < wl_min_rc)
+                wl_min = wl_min_rc;
+            if(wl_min > wl_max_rc)
+            {
+                wl_min = wl_min_rc;
+                wl_max = wl_max_rc;
+            }
             if(wl_min > wl_max)
                 wl_max = wl_min;
+        }
+            
         if(ImGui::SliderFloat("max_wl", &wl_max, 300, 800))
+        {
+            resample_wls = true;
+            float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+            float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+            if(wl_max > wl_max_rc)
+                wl_max = wl_max_rc;
+            if(wl_max < wl_min_rc)
+            {
+                wl_max = wl_max_rc;
+                wl_min = wl_min_rc;
+            }
             if(wl_max < wl_min)
                 wl_min = wl_max;
-        
-        ImGui::SliderInt("wl_sample_strat", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str());
+        }
+            
+        if(ImGui::SliderInt("wl_sample_strat", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str()))
+        {
+            resample_wls = true;
+        }
         
         if (Combo("response_curve", &selected_resp_curve, response_curve_names, response_curve_names.size()))
         {
+            resample_wls = true;
             auto iter = response_curves_render->begin();
             std::advance(iter,  selected_resp_curve);
             // std::cout << "RESPONSE CURVE SELECTED: " << response_curve_names[selected_resp_curve] << ", " << iter->first << ", " << response_curves_render->at(response_curve_names[selected_resp_curve]) << std::endl;
+            float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+            float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+            if(wl_max > wl_max_rc || wl_max < wl_min_rc)
+                wl_max = wl_max_rc;
+            if(wl_min < wl_min_rc || wl_min > wl_max_rc)
+                wl_min = wl_min_rc;
         }
 
     }
@@ -190,10 +250,11 @@ void RendererTestUplifting::set_scene_lighting_uniforms(Shader* shader, Camera* 
     /// TODO: Cómo cojones hago yo para poner los uniforms de un shader cualquiera xdd
     /// De momento hardcodeo los del shader de uplifting y ya veré 
     shader->use();
-    //shader->setFloat("exposure", 0.75);
-    //shader->setInt("flipY", 0);
+    shader->setBool("do_spectral_uplifting", do_spectral);
     shader->setInt("n_wls", num_wavelengths);
-    // uniform float wls[40] ??
+    shader->setFloat("wl_min", wl_min);
+    shader->setFloat("wl_max", wl_max);
+    shader->setInt("res", 64);  // Do not touch, LUT related
 }
 
 void RendererTestUplifting::render_quad() const
@@ -340,4 +401,10 @@ void RendererTestUplifting::populate_resp_curves_list()
     {
         response_curve_names.push_back(i->first);
     }
+}
+
+void RendererTestUplifting::gen_sampled_wls_tex1d()
+{
+    glDeleteTextures(1, &id);
+    /// TODO: 
 }

@@ -4,18 +4,20 @@ in vec2 fTexcoords;
 
 layout (location = 0) out vec4 out_color;
 
-layout (location = 1) out vec4 uplift_wl_0_3;
-layout (location = 2) out vec4 uplift_wl_4_7;
-layout (location = 3) out vec4 uplift_wl_8_11;
-
 layout (binding = 0) uniform sampler2D tex_to_uplift;
 layout (binding = 1) uniform sampler3D LUT_1;
 layout (binding = 2) uniform sampler3D LUT_2;
 layout (binding = 3) uniform sampler3D LUT_3;
+layout (binding = 4) uniform sampler1D resp_curve;
+layout (binding = 5) uniform sampler1D tex_wavelengths;
 
+uniform bool do_spectral_uplifting;
 uniform int n_wls;
+uniform float wl_min;
+uniform float wl_max;
 uniform int res = 64;
-// uniform float wls[40];
+
+
 
 vec3 encode_sRGB(vec3 linear_RGB)
 {
@@ -57,7 +59,7 @@ float rgb2spec_find_interval(float x)
     // Instead of passing the scale[64] array, we generate its contents
     // and blindly search for the closest (rounded down) one to x.
     // We can do this thanks to smoothstep being monotonically increasing
-    // (Anyway, it's still sketchy as fuck but I want to make this shit work)
+    // (Anyway, it's still sketchy as hell but I want to make this work)
     for (int k = 0; k < res; ++k)
     {
         current = scale(float(k));
@@ -78,7 +80,7 @@ float rgb2spec_find_interval(float x)
     return old;
 }
 
-// a translation attempt from wenzel jakob's rgb2spec code to glsl
+// A translation attempt from wenzel jakob's rgb2spec code to glsl
 vec3 fetch_coeffs_from_lut_trilinear_manual(vec3 rgb)
 {
     // determine biggest component of our rgb color:
@@ -152,7 +154,9 @@ vec3 fetch_coeffs_from_lut_trilinear_manual(vec3 rgb)
     return coeffs;
 }
 
-// a translation attempt from wenzel jakob's rgb2spec code to glsl
+// Another translation attempt from wenzel jakob's rgb2spec code to glsl 
+//  (doesn't work properly since one dimension in the 3D LUT is non linear 
+//  and returns incorrect values for the spectral coefficients)
 vec3 fetch_coeffs_from_lut_opengl_interp(vec3 rgb)
 {
     // determine biggest component of our rgb color:
@@ -189,43 +193,72 @@ vec3 fetch_coeffs_from_lut_opengl_interp(vec3 rgb)
     return coeffs;
 }
 
-void main()
+float[] sample_wls_equally_spaced(float wl_min, float wl_max, int n_wls)
 {
-    float _WAVELENGTH = 532.0;
-
-    // Perform the uplifting here    
-    vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
-
-    vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
-    //vec3 coeffs = fetch_coeffs_from_lut_opengl_interp(color_hardcoded);
-    
-    for(int i = 0; i < min(n_wls, 12); i++)
+    float wavelengths[n_wls];
+    for(int i = 0; i < n_wls; i++)
     {
-        if(i <4)
-        {
-            uplift_wl_0_3[i % 4] = S(coeffs, _WAVELENGTH);
-        }
-        else if(i <8)
-        {
-            int _i = 0;                          // The index of the biggest color, also the lut to be consulted
-            for(int j=1; j < 3; j++)
-            {
-                if(color_rgb[j] >= color_rgb[_i])
-                {
-                    _i = j;
-                }
-            }
+        wavelengths[i] = wl_min + (float(i - 1) * (wl_max - wl_min));
+    }
+    return wavelengths;
+}
 
-            float z = color_rgb[_i];
-            float _z = scale(z * float(float(res) - 1.0));
-            uplift_wl_4_7.rgba = vec4(z, z, _z, _z);
-            //uplift_wl_4_7[i % 4] = S(coeffs, _WAVELENGTH);
-        }
-        else if(i <12)
+float[] sample_wavelengths_to_use(float wl_min, float wl_max, int n_wls, int sample_strat)
+{
+    /// We only have one strat for now, equally spaced along the specified wl range
+    //      Will look into adding more later on, I guess.
+    float wavelengths[n_wls];
+    if(sample_strat == 1)
+    {
+        wavelengths = sample_wls_equally_spaced(wl_min, wl_max, n_wls);
+    }
+    else if(sample_strat == 2)
+    {
+        // Made-up strategy for testing, I´ll add a proper one in the future
+        for (int i = 0; i < n_wls> i++)
         {
-            // uplift_wl_8_11[i% 4] = S(coeffs, _WAVELENGTH);
-            uplift_wl_8_11.rgba = vec4(coeffs, 1.0);
+            wavelengths[i] = wl_min;  // All wavelengths are wl_min (dummy code)
         }
     }
-    out_color = vec4(color_rgb, 1.0);
+    else //(sample_strat == 3)
+    {
+        // Made-up strategy for testing, I´ll add a proper one in the future
+        for (int i = 0; i < n_wls> i++)
+        {
+            wavelengths[i] = wl_max;  // All wavelengths are wl_max (dummy code)
+        }
+        return wavelengths;
+    }
+}
+
+void main()
+{
+    if(do_spectral_uplifting)
+    {
+        
+        vec3 color_spectral = vec3(0,0,0);
+        for (int i = 0; i < n_wls; i++)
+        {
+            float wavelength = texture(tex_wavelengths, i);
+            // Perform the uplifting step. First sample the texture normally
+            vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
+
+            // Then fetch the coefficients from the 3D LUT with the rgb color
+            vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
+
+            float _S = S(coeffs, wavelength);
+            vec3 response_for_wl = texture(resp_curve, wavelength).rgb;
+
+            // Cumulative sum for Riemann integration
+            color_spectral = color_spectral + ( _S * response_for_wl );
+        }
+
+        // Riemann sum final step: Divide by number and size of steps
+        out_color = vec4(((wl_max - wl_min) / float(n_wls) * color_spectral).rgb, 1.0);
+    }
+    else
+    {
+        // Simply return the rgb texture colors as normal
+        out_color = vec4(texture(tex_to_uplift, fTexcoords).rgb, 1.0);
+    }
 }

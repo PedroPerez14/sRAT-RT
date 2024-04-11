@@ -20,7 +20,7 @@ public:
 
     /// @brief This renderer will render a texture in fullscreen, for some testing
     /// @param scene 
-    void render_scene(Scene* scene) const;
+    void render_scene(Scene* scene);
 
     void render_ui();
 
@@ -49,8 +49,9 @@ private:
     colorspace working_colorspace;
     unsigned int m_fullscreen_vao;
     unsigned int tex_test;
-    unsigned int tex_lut;
-    bool do_spectral;           // if false, we will just render to rgb
+    unsigned int sampled_wls_tex_id;
+    bool do_spectral;                   // if false, we will just render to rgb
+    bool resample_wls;                  // true if we need to resample the wavelengths that we'll use for our computation
     int num_wavelengths;
     float wl_min;
     float wl_max;
@@ -67,6 +68,7 @@ private:
     void lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables);
     void reload_shaders();
     void populate_resp_curves_list();
+    void gen_sampled_wls_tex1d();
 };
 
 #endif

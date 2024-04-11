@@ -14,7 +14,7 @@ public:
         
     }
 
-    virtual void render_scene(Scene* scene) const = 0;
+    virtual void render_scene(Scene* scene) = 0;
     virtual void render_ui() = 0;
     virtual void handle_resize(int width, int height) = 0;
 private:

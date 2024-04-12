@@ -5,41 +5,41 @@
 ResponseCurve::ResponseCurve(std::string respcurve_full_path)
 {
     response_sample_vector = std::vector<response_sample>();
-        response_sample_vector.empty();
-        n_samples = 0;
-        std::ifstream f(respcurve_full_path);
-        if(!f.is_open()) throw std::runtime_error("Could not open response curve!");
-        std::string line_wls, line_r, line_g, line_b;
-        std::string s_wl, s_r, s_g, s_b;
-        float wl, resp_r, resp_g, resp_b;   // It can be XYZ and not rgb, be careful
-        
-        if(std::getline(f, line_wls) && std::getline(f, line_r) 
-        && std::getline(f, line_g) && std::getline(f, line_b))
+    response_sample_vector.empty();
+    n_samples = 0;
+    std::ifstream f(respcurve_full_path);
+    if(!f.is_open()) throw std::runtime_error("Could not open response curve!");
+    std::string line_wls, line_r, line_g, line_b;
+    std::string s_wl, s_r, s_g, s_b;
+    float wl, resp_r, resp_g, resp_b;   // It can be XYZ and not rgb, be careful
+    
+    if(std::getline(f, line_wls) && std::getline(f, line_r) 
+    && std::getline(f, line_g) && std::getline(f, line_b))
+    {
+        std::stringstream ss_wl(line_wls);
+        std::stringstream ss_r(line_r);
+        std::stringstream ss_g(line_g);
+        std::stringstream ss_b(line_b);
+
+        while(std::getline(ss_wl, s_wl, ',') && std::getline(ss_r, s_r, ',') 
+        && std::getline(ss_g, s_g, ',') && std::getline(ss_b, s_b, ','))
         {
-            std::stringstream ss_wl(line_wls);
-            std::stringstream ss_r(line_r);
-            std::stringstream ss_g(line_g);
-            std::stringstream ss_b(line_b);
+            response_sample rs;
+            rs.wavelength = std::stof(s_wl);
+            rs.responses[0] = std::stof(s_r);
+            rs.responses[1] = std::stof(s_g);
+            rs.responses[2] = std::stof(s_b);
 
-            while(std::getline(ss_wl, s_wl, ',') && std::getline(ss_r, s_r, ',') 
-            && std::getline(ss_g, s_g, ',') && std::getline(ss_b, s_b, ','))
-            {
-                response_sample rs;
-                rs.wavelength = std::stof(s_wl);
-                rs.responses[0] = std::stof(s_r);
-                rs.responses[1] = std::stof(s_r);
-                rs.responses[2] = std::stof(s_b);
+            response_sample_vector.push_back(rs);
 
-                response_sample_vector.push_back(rs);
+            if(n_samples == 0)
+                wl_min = std::stof(s_wl);
+            wl_max = std::stof(s_wl);
 
-                if(n_samples == 0)
-                    wl_min = std::stof(s_wl);
-                wl_max = std::stof(s_wl);
-
-                n_samples++;
-            }
+            n_samples++;
         }
-        generate_gltexture_from_data();
+    }
+    generate_gltexture_from_data();
 }
 
 float ResponseCurve::get_wl_min() const
@@ -70,11 +70,12 @@ std::vector<response_sample>* ResponseCurve::get_curve_data()
 void ResponseCurve::generate_gltexture_from_data()
 {
     float* buffer_tex = new float[n_samples * 3];
-    for(int i = 0; i < response_sample_vector.size(); i++)
+    for(int i = 0; i < n_samples; i++)
     {
-        buffer_tex[i + 0] = response_sample_vector.at(i).responses[0];  // R
-        buffer_tex[i + 1] = response_sample_vector.at(i).responses[1];  // G
-        buffer_tex[i + 2] = response_sample_vector.at(i).responses[2];  // B
+        buffer_tex[3*i + 0] = response_sample_vector.at(i).responses[0];  // R
+        buffer_tex[3*i + 1] = response_sample_vector.at(i).responses[1];  // G
+        buffer_tex[3*i + 2] = response_sample_vector.at(i).responses[2];  // B
+        // std::cout << "R: " << buffer_tex[i + 0] << "; G: " << buffer_tex[i + 1] << "B: " << buffer_tex[i + 2] << std::endl;
     }
 
     glGenTextures(1, &response_sample_tex_id);

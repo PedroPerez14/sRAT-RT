@@ -20,11 +20,11 @@ RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_
     "../src/shaders/test_uplifting/vertex_uplifting_pass2.glsl", 
     "../src/shaders/test_uplifting/fragment_uplifting_pass2.glsl");
     /// TODO: Try uplifting several different textures!
-    tex_test = texture_from_file("container.jpg", "../resources/textures");
+    tex_test = texture_from_file("spectrum.jpg", "../resources/textures");
     // Now, initialize the 3D textures from the LUTs we loaded as 1D arrays
     lut_textures_create(look_up_tables);
     response_curves_render = response_curves;
-    selected_resp_curve = 0;
+    selected_resp_curve = 9;
     populate_resp_curves_list();
     resample_wls = true;
     working_colorspace = settings->get_colorspace();
@@ -96,7 +96,7 @@ void RendererTestUplifting::render_scene(Scene* scene)
 
     // Set the shader uniforms
     m_final_pass_shader->use();
-    m_final_pass_shader->setInt("show_original_tex_or_spec2rgb", 1);
+    m_final_pass_shader->setBool("do_spectral_uplifting", do_spectral);
     
     for(int i = 0; i < FRAMEBUFFER_TEX_NUM; i++)
     {
@@ -435,9 +435,11 @@ void RendererTestUplifting::gen_sampled_wls_tex1d()
 float* RendererTestUplifting::sample_equispaced()
 {
     float* wavelengths = new float[num_wavelengths];
+    float delta = (wl_max - wl_min) / (float)num_wavelengths;
      for(int i = 0; i < num_wavelengths; i++)
      {
-         wavelengths[i] = wl_min + (float(i) * ((wl_max - wl_min) / (float)(num_wavelengths - 1)));
+        // Riemann middle sum
+        wavelengths[i] = wl_min + (i * delta) + (delta / 2.0f);
      }
      return wavelengths;
 }

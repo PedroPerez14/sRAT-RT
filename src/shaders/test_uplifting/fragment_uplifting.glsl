@@ -3,6 +3,13 @@
 in vec2 fTexcoords;
 
 layout (location = 0) out vec4 out_color;
+layout (location = 1) out vec4 debug_1;
+layout (location = 2) out vec4 debug_2;
+layout (location = 3) out vec4 debug_3;
+layout (location = 4) out vec4 debug_4;
+layout (location = 5) out vec4 debug_5;
+layout (location = 6) out vec4 debug_6;
+layout (location = 7) out vec4 debug_7;
 
 layout (binding = 0) uniform sampler2D tex_to_uplift;
 layout (binding = 1) uniform sampler3D LUT_1;
@@ -195,6 +202,11 @@ vec3 fetch_coeffs_from_lut_opengl_interp(vec3 rgb)
     return coeffs;
 }
 
+vec3 reinhard(vec3 v)
+{
+    return v / (1.0f + v);
+}
+
 void main()
 {
     if(do_spectral_uplifting)
@@ -202,29 +214,64 @@ void main()
         vec3 color_spectral = vec3(0.0, 0.0, 0.0);
         //float _S;
         //vec3 response_for_wl;
+        // Perform the uplifting step. First sample the texture normally
+        vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
         for (int i = 0; i < n_wls; i++)
         {
             float wavelength = texture(tex_wavelengths, (float(i) / float(n_wls))).r;
-            // Perform the uplifting step. First sample the texture normally
-            vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
-
+            
             // Then fetch the coefficients from the 3D LUT with the rgb color
             vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
 
             float _S = S(coeffs, wavelength);
+            //_S = 1.0 - (float(i) / float(n_wls));
 
             float wl_range = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
             vec3 response_for_wl = texture(resp_curve, wl_range).rgb;
-
             // Cumulative sum for Riemann integration
-            color_spectral.rgb = color_spectral.rgb + vec3(_S * response_for_wl.r, _S * response_for_wl.g, _S * response_for_wl.b);
+            if(i == 0)
+            {
+                debug_1 = vec4(_S, wavelength, wl_range, 1.0);
+                debug_2 = vec4(response_for_wl, 1.0);
+            }
+            if(i == 1)
+            {
+                debug_3 = vec4(_S, wavelength, wl_range, 1.0);
+                debug_4 = vec4(response_for_wl, 1.0);
+            }
+            if(i == 2)
+            {
+                debug_5 = vec4(_S, wavelength, wl_range, 1.0);
+                debug_6 = vec4(response_for_wl, 1.0);
+            }
+            if(i == 3)
+            {
+                debug_7 = vec4(_S, wavelength, wl_range, 1.0);
+            }
+            color_spectral += _S * response_for_wl;
         }
 
         // Riemann sum final step: Divide by number and size of steps
-        out_color = vec4( ( ( (wl_max - wl_min) / float(n_wls) ) * color_spectral.rgb), 1.0);
-        float w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), 466.0);
-        //* texture(resp_curve, ((466.0-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb
-        out_color = vec4(w * texture(resp_curve, ((466.0-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
+        out_color = vec4((( (wl_max - wl_min) / float(n_wls) ) * color_spectral.rgb), 1.0);
+        // out_color = vec4( (color_spectral.rgb), 1.0);
+        // out_color = vec4(0,0,0,1);
+        // float _wl_test = 437.5;
+        // float w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
+        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
+
+        // _wl_test = 512.5;
+        // w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
+        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
+
+        // _wl_test = 587.5;
+        // w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
+        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
+
+        // _wl_test = 662.5;
+        // w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
+        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
+
+        // out_color.a = 1.0;
     }
     else
     {

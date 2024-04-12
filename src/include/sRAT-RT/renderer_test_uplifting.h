@@ -9,7 +9,7 @@
 #include <rgb2spec/rgb2spec.h>
 
 /// TODO: CHECK THIS (WILL CAUSE PROBLEMS LATER, 100% SURE)
-#define FRAMEBUFFER_TEX_NUM 1
+#define FRAMEBUFFER_TEX_NUM 8   // MAX NUMBER OF TEXTURES (AT LEAST IN MY TESTING MACHINE) IS 8
 
 class RendererTestUplifting : public Renderer
 {
@@ -39,7 +39,7 @@ private:
 
     // Wavelength sampling stuff, it's very dirty to be honest but I can't come up with something better for now
     const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
-    const std::string wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "ALT_1", "ALT_2" };
+    const std::string wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "MAX_WL", "MIN_WL" };
     float* (RendererTestUplifting::*wl_sampling_funcs[STRAT_COUNT])() = 
     { &RendererTestUplifting::sample_equispaced, &RendererTestUplifting::sample_alt1, &RendererTestUplifting::sample_alt2 };
 

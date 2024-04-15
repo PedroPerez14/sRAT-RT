@@ -55,6 +55,7 @@ private:
     unsigned int sampled_wls_tex_id;
     bool do_spectral;                   // if false, we will just render to rgb
     bool resample_wls;                  // true if we need to resample the wavelengths that we'll use for our computation
+    bool is_response_in_xyz;            // if true, the response curve will be treated as in xyz space, otherwise, rgb
     int num_wavelengths;
     float wl_min;
     float wl_max;

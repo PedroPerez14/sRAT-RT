@@ -27,6 +27,7 @@ RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_
     selected_resp_curve = 9;
     populate_resp_curves_list();
     resample_wls = true;
+    is_response_in_xyz = false;
     working_colorspace = settings->get_colorspace();
     num_wavelengths = settings->get_num_wavelengths();
     wl_min = settings->get_wl_min();
@@ -159,7 +160,7 @@ void RendererTestUplifting::render_ui()
             resample_wls = true;
         }
 
-        if(ImGui::SliderFloat("min_wl", &wl_min, 300, 800))
+        if(ImGui::SliderFloat("min_wl", &wl_min, 300, 860))
         {
             resample_wls = true;
             float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
@@ -175,7 +176,7 @@ void RendererTestUplifting::render_ui()
                 wl_max = wl_min;
         }
             
-        if(ImGui::SliderFloat("max_wl", &wl_max, 300, 800))
+        if(ImGui::SliderFloat("max_wl", &wl_max, 300, 860))
         {
             resample_wls = true;
             float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
@@ -209,7 +210,7 @@ void RendererTestUplifting::render_ui()
             if(wl_min < wl_min_rc || wl_min > wl_max_rc)
                 wl_min = wl_min_rc;
         }
-
+        ImGui::Checkbox("Is response XYZ?", &is_response_in_xyz);
     }
 
     ImGui::SeparatorText(" OTHER CONFIGURATION: ");
@@ -261,6 +262,7 @@ void RendererTestUplifting::set_scene_lighting_uniforms(Shader* shader, Camera* 
     /// De momento hardcodeo los del shader de uplifting y ya veré 
     shader->use();
     shader->setBool("do_spectral_uplifting", do_spectral);
+    shader->setBool("convert_xyz_to_rgb", is_response_in_xyz);
     shader->setInt("n_wls", num_wavelengths);
     shader->setFloat("wl_min", wl_min);
     shader->setFloat("wl_max", wl_max);

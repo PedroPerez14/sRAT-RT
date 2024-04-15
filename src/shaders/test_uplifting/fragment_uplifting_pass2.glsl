@@ -17,8 +17,8 @@ vec3 encode_sRGB(vec3 linear_RGB)
 }
 
 
-const float gamma = 0.4;
-const float exposure = 0.04;
+const float gamma = 2.4;
+const float exposure = 0.5;
 
 vec3 reinhard(vec3 v)
 {
@@ -28,7 +28,6 @@ vec3 reinhard(vec3 v)
 
 vec3 linearToneMapping(vec3 color)
 {
-	float exposure = 0.01;
 	color = clamp(exposure * color, 0., 1.);
 	color = pow(color, vec3(1. / gamma));
 	return color;
@@ -44,11 +43,11 @@ vec3 exposureToneMapping(vec3 color)
 
 void main()
 {
-    // L=0.2125R+0.7154G+0.0721B !!!!!
+    // L=0.2125R+0.7154G+0.0721B
     vec3 col = texture(tex, fTexcoords).rgb;
     out_color = vec4(col.rgb, 1.0);
     if(do_spectral_uplifting)
     {
-        out_color.rgb = exposureToneMapping(out_color.rgb);
+        //out_color.rgb = reinhard(out_color.rgb);
     }
 }

@@ -19,6 +19,7 @@ layout (binding = 4) uniform sampler1D resp_curve;
 layout (binding = 5) uniform sampler1D tex_wavelengths;
 
 uniform bool do_spectral_uplifting;
+uniform bool convert_xyz_to_rgb;
 uniform int n_wls;
 uniform float wl_min;
 uniform float wl_max;
@@ -26,7 +27,32 @@ uniform float wl_min_resp;
 uniform float wl_max_resp;
 uniform int res = 64;
 
+//// SOME CONSTANT VARIABLES ////
+const mat3 XYZ_TO_RGB_M = mat3(
+    3.2406255, -1.5372080, -0.4986286,
+    -0.9689307, 1.8757561, 0.0415175,
+    0.0557101, -0.2040211, 1.0569959
+    );
 
+const mat3 RGB_TO_XYZ_M = mat3(
+    0.4124, 0.3576, 0.1805,
+    0.2126, 0.7152, 0.0722,
+    0.0193, 0.1192, 0.9505
+);
+
+// const mat3 XYZ_TO_RGB_M = mat3(
+//     3.2404542, -1.5371385, -0.4985314,
+//     -0.9692660, 1.8760108, 0.0415560,
+//     0.0556434, -0.2040259, 1.0572252
+//     );
+
+// const mat3 RGB_TO_XYZ_M = mat3(
+//     0.4124564, 0.3575761, 0.1804375,
+//     0.2126729, 0.7151522, 0.0721750,
+//     0.0193339, 0.1191920, 0.9503041
+// );
+
+/////////////////////////////////
 
 vec3 encode_sRGB(vec3 linear_RGB)
 {
@@ -202,76 +228,62 @@ vec3 fetch_coeffs_from_lut_opengl_interp(vec3 rgb)
     return coeffs;
 }
 
-vec3 reinhard(vec3 v)
+vec3 XYZ_to_RGB(vec3 xyz)
 {
-    return v / (1.0f + v);
+    return xyz * XYZ_TO_RGB_M;
+}
+
+vec3 RGB_to_XYZ(vec3 rgb)
+{
+    return rgb * RGB_TO_XYZ_M;
 }
 
 void main()
 {
+    vec3 _rgb_test = vec3(0.098, 0.556, 0.278);
+    vec3 _xyz_target = vec3(0.1174, 0.1999, 0.0714);
+    vec3 _xyz_converted = RGB_to_XYZ(_rgb_test);
+    vec3 _rgb_from_xyz_from_rgb = XYZ_to_RGB(_xyz_converted);
+    debug_1 = vec4(_rgb_test, 1.0);
+    debug_2 = vec4(_xyz_target, 1.0);
+    debug_3 = vec4(_xyz_converted, 1.0);
+    debug_4 = vec4(_rgb_from_xyz_from_rgb, 1.0);
+
     if(do_spectral_uplifting)
     {
-        vec3 color_spectral = vec3(0.0, 0.0, 0.0);
+        vec4 color_spectral = vec4(0.0, 0.0, 0.0, 0.0);
         //float _S;
         //vec3 response_for_wl;
         // Perform the uplifting step. First sample the texture normally
         vec3 color_rgb = texture(tex_to_uplift, fTexcoords).rgb;
         for (int i = 0; i < n_wls; i++)
         {
+            // Fetch the original rgb color from the texture
             float wavelength = texture(tex_wavelengths, (float(i) / float(n_wls))).r;
             
             // Then fetch the coefficients from the 3D LUT with the rgb color
             vec3 coeffs = fetch_coeffs_from_lut_trilinear_manual(color_rgb);
 
+            // Get the spectral response for our chosen wavelength
             float _S = S(coeffs, wavelength);
-            //_S = 1.0 - (float(i) / float(n_wls));
 
+            // And the sensor response (tristimulus, can be XYZ or RGB)
             float wl_range = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
             vec3 response_for_wl = texture(resp_curve, wl_range).rgb;
+            if(!convert_xyz_to_rgb)
+            {
+                response_for_wl = RGB_to_XYZ(response_for_wl.rgb);
+            }
+
             // Cumulative sum for Riemann integration
-            if(i == 0)
-            {
-                debug_1 = vec4(_S, wavelength, wl_range, 1.0);
-                debug_2 = vec4(response_for_wl, 1.0);
-            }
-            if(i == 1)
-            {
-                debug_3 = vec4(_S, wavelength, wl_range, 1.0);
-                debug_4 = vec4(response_for_wl, 1.0);
-            }
-            if(i == 2)
-            {
-                debug_5 = vec4(_S, wavelength, wl_range, 1.0);
-                debug_6 = vec4(response_for_wl, 1.0);
-            }
-            if(i == 3)
-            {
-                debug_7 = vec4(_S, wavelength, wl_range, 1.0);
-            }
-            color_spectral += _S * response_for_wl;
+            color_spectral += vec4(_S * response_for_wl, response_for_wl.g);
         }
 
         // Riemann sum final step: Divide by number and size of steps
-        out_color = vec4((( (wl_max - wl_min) / float(n_wls) ) * color_spectral.rgb), 1.0);
-        // out_color = vec4( (color_spectral.rgb), 1.0);
-        // out_color = vec4(0,0,0,1);
-        // float _wl_test = 437.5;
-        // float w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
-        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
+        color_spectral = (( float(wl_max - wl_min) / float(n_wls) ) * color_spectral);
 
-        // _wl_test = 512.5;
-        // w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
-        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
-
-        // _wl_test = 587.5;
-        // w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
-        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
-
-        // _wl_test = 662.5;
-        // w = S(fetch_coeffs_from_lut_trilinear_manual(texture(tex_to_uplift, fTexcoords).rgb), _wl_test);
-        // out_color += vec4(w * texture(resp_curve, ((_wl_test-wl_min_resp)/(wl_max_resp-wl_min_resp))).rgb , 1);
-
-        // out_color.a = 1.0;
+        vec3 aux = XYZ_to_RGB(color_spectral.rgb / color_spectral.a);   // XYZ luminance Y normalization to 100
+        out_color = vec4(aux, 1.0);
     }
     else
     {

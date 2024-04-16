@@ -1,8 +1,6 @@
 #include <sRAT-RT/model.h>
 #include <sRAT-RT/stb_image.h>
 
-
-
 unsigned int TextureFromFile(const char* path, const std::string& directory)
 {
     std::string filename(path);

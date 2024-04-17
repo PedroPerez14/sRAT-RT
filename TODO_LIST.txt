@@ -5,24 +5,27 @@
 2.- Define a proper format for our scenes, enabling specificaiton for models, textures, positions, rotations, etc.
     2.1.- Copy Mitsuba's format? Or will it be time consuming? hmmm
     2.2.- Hardcode a test scene? just specify a camera position, shaders, a target texture and a few shaders (deferred lighting are defined by default)
-3.- Remember the structure of the GBuffer! [ AND CHANGE IT WHENEVER YOU NEED IT, IT'S JUST A PLACEHOOLDER FOR NOW ]
-    3.1.- //write here the structure, i forgot it
-4.- WRITE THE SHADERS FOR RENDERING THE TEST SCENE -- DONE (I hope it doesn't explode :) )
-    4.1.- STILL LEFT TO DO --> Properly set the uniforms for the 3 shader passes (write code in the set_somethingsomething_uniforms() methods I created a few days ago)
-5.- What about the m_fullscreen_vao? -- Do this second, needed to render properly
-    5.1.- Do I need it or can it be bypassed by generating fake vertex coords in the deferred lighting shader?
-    5.2.- This is going to come back later to bite me in the ass I can see it, clear as day
 
 
-[10-4-23]
-UI Work Pending: - Allow per-object shader hot reloading? Now I'm only doing it for the renderer shaders    [Decide later, not now]
-                 - Should I let users choose a colorspace to render to? Or always to sRGB?                  [For now stick to rgb, later I'll have to do it, I guess]
-                 - Let users choose the shaders!!! (all of them or only the ones in the scene?)             [Would be very cool, near future?]
-                            > This will increase the size of render_ui(), create separate RendererUI class? [Hmmm, I'll have to think this one]
-                            > Combine with 1. in the above list
 
-Other tasks:     - In order to change the number of wavelengths I'll have to change the number of textures in the GBuffer (right ?)
-                 - Change fragment shader and add the parameters I've enabled to be changed via the UI (response curve as tex1d, #wls, strat, etc.)
-                 - Change fragment shader and add calculations to go from spec2rgb (multiply by resp. curve)
-                 - Add CIE 193(1 or 2?) (also more CIE curves i.e 2006?) to the available response curves
-                 - Add a few materials and a test scene with a single dir light, I guess (not this week, unlikely to happen)
+Other tasks:    - Add a few materials and a test scene with a single dir light
+
+
+
+[17-04-24]
+TODO LIST BEFORE BEING ABLE TO HAVE A RUNNING DEMO:
+    - Implement the Transform class
+    - Implement hierarchy Object(abstract)->RenderableObject(inherits)->Model(inherits again): 
+            - Object should have a Transform member
+            - RenderableObject should have a Material member
+    - Add the 2 render passes/queues (3 but one of them is just the deferred geometry pass)
+    - Later on, implement the hierarchy Object(abstract)->Light(inherits)->{point, dir}
+            - Light should have a Transform member
+            - More later on, add the areaLight class that inherits from both Light and Model (class Light : virtual Public Object ?)
+    - Change Scene::Scene() to load a scene file (also define this format somewhere)
+    - Change Scene::load_model() with anything necessary to match the new code structure
+    - Modify Model::draw() and Mesh::draw() to take their Material into account
+            - Call the Material's set_shader_uniforms() method before drawing!
+    - Add Camera class !!
+            - Add a Camera member to the Renderer superclass
+    - Add all the new files into CMakeLists.txt before compiling!

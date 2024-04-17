@@ -29,26 +29,6 @@ bool Model::loadModel(const std::string& path)
     return processNode(scene->mRootNode, scene);       // Start recursive processing of nodes
 }
 
-Shader* Model::get_deferred_shader() const
-{
-    return m_shader_deferred;
-}
-
-Shader* Model::get_forward_shader() const
-{
-    return m_shader_forward;
-}
-
-void Model::set_deferred_shader(Shader* def)
-{
-    m_shader_deferred = def;
-}
-
-void Model::set_forward_shader(Shader* fwd)
-{
-    m_shader_forward = fwd;
-}
-
 bool Model::processNode(aiNode* node, const aiScene *scene)
 {
     // First process all the nodes

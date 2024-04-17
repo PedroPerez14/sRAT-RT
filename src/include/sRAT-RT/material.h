@@ -15,7 +15,6 @@ struct Texture {
 class Material
 {
 public:
-    std::string mat_name;
     RenderPasses shader_pass;                   // Which draw pass does the material's shader belong to?
     
     virtual void set_shader_uniforms() = 0;     // Sets the uniforms for the shader associated with this material. Also binds any necessary textures.
@@ -33,7 +32,10 @@ public:
         
     }
 
-private:
+protected:
+    // Name of the material
+    std::string mat_name;
+    
     // Each material will have a few uniforms (i.e roughness, specularity, etc)
     //      but those will be defined for each child material.
     //      A map of <std::string, std::vector<textures or uints> would be overengineering

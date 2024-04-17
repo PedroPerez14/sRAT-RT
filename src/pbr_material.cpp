@@ -37,30 +37,52 @@ unsigned int texture_from_file(const std::string& full_path)
     return textureID;
 }
 
-PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load, const char* vert_sh_path, const char* frag_sh_path)
+PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load, const char* vert_sh_path, 
+                        const char* frag_sh_path, RenderPasses _shader_pass = DEFERRED_ILLUMINATION)
 {
+    mat_name = "PBR_MAETRIAL";
+    shader_pass = _shader_pass;
+
     mat_textures.empty();   // just in case
-    
+    // Load the textures and compile the shaders
     load_textures(textures_to_load);
-
     mat_shader = new Shader(vert_sh_path, frag_sh_path);
-
-    /// TODO: ANYTHING ELSE
 }
 
+
+/// WARNING: WE OPERATE UNDER THE ASSUMPTION THAT THE TEXTURES ARE IN THE SAME ORDER AS THEIR BINDINGS
 void PBRMaterial::set_shader_uniforms()
 {
-
+    // For this type of PBR shader we assume that every uniform is a texture
+    for(unsigned int i = 0; i < mat_textures.size(); i++)
+    {
+        Texture _tex = mat_textures[i];
+        glActiveTexture(GL_TEXTURE0 + _tex.binding);
+        glBindTexture(GL_TEXTURE_2D, _tex.id);
+        mat_shader->setInt((const std::string)(_tex.type), _tex.binding);
+    }
+    // Good practice to set everything back to default
+    glActiveTexture(GL_TEXTURE0);
 }
 
 Shader* PBRMaterial::get_shader()
 {
-
+    return mat_shader;
 }
 
 bool PBRMaterial::reload_shader()
 {
-
+    bool reload_ok = true;
+    Shader* shader_old = mat_shader;
+    Shader* shader_new = new Shader(mat_shader->m_vertexPath, mat_shader->m_vertexPath, reload_ok);
+    if(reload_ok)
+    {
+        // if compilation or linking of the shader failed, it won't be used
+        //      to avoid program-crashing failures
+        mat_shader = shader_new;
+        delete shader_old;
+    }
+    return reload_ok;
 }
 
 void PBRMaterial::load_textures(const std::vector<Texture>& textures_to_load)
@@ -80,7 +102,7 @@ void PBRMaterial::load_textures(const std::vector<Texture>& textures_to_load)
             }
         }
         // If not previously loaded, load it
-        if(!break)
+        if(!skip)
         {
             Texture tex;
             tex.id = texture_from_file(textures_to_load[i].path);

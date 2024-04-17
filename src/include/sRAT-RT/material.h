@@ -5,12 +5,18 @@
 #include <sRAT-RT/shader.h>
 #include <sRAT-RT/render_passes.h>
 
+struct Texture {
+    unsigned int id;        // OpenGL's texture ID
+    unsigned int binding;   // for example, diff_texture<N>, where N = binding
+    std::string type;       // diff_texture, normal_texture, etc. among others
+    std::string path;       // we store the path of the texture to compare with other textures
+};
+
 class Material
 {
 public:
-
     std::string mat_name;
-    RenderPasses shader_pass;                   // Which draw pass does the shader of this material belong to?
+    RenderPasses shader_pass;                   // Which draw pass does the material's shader belong to?
     
     virtual void set_shader_uniforms() = 0;     // Sets the uniforms for the shader associated with this material. Also binds any necessary textures.
     virtual Shader* get_shader() = 0;           // Returns the current shader in case we need to use() it
@@ -28,6 +34,11 @@ public:
     }
 
 private:
+    // Each material will have a few uniforms (i.e roughness, specularity, etc)
+    //      but those will be defined for each child material.
+    //      A map of <std::string, std::vector<textures or uints> would be overengineering
+
+    // Each material will have one shader attached to it
     Shader* mat_shader;
 };
 

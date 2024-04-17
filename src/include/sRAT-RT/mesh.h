@@ -20,21 +20,22 @@ struct Vertex {
     }
 };
 
-struct Texture {
-    unsigned int id;
-    std::string type;
-    std::string path;  // we store the path of the texture to compare with other textures
-};
+// struct Texture {
+//     unsigned int id;
+//     std::string type;
+//     std::string path;  // we store the path of the texture to compare with other textures
+// };
 
 class Mesh {
 public:
     // mesh data
     std::vector<Vertex>       vertices;
     std::vector<unsigned int> indices;
-    std::vector<Texture>      textures;
+    //std::vector<Texture>      textures;
 
 	Mesh();
-    Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<Texture>& textures);
+    //Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<Texture>& textures);
+    Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
 
 	void draw(Shader &shader);
 

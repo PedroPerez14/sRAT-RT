@@ -4,8 +4,10 @@ Mesh::Mesh()
 {
 }
 
-Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<Texture>& textures)
-	: vertices(vertices), indices(indices), textures(textures)
+// Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<Texture>& textures)
+// 	: vertices(vertices), indices(indices), textures(textures)
+Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices)
+	: vertices(vertices), indices(indices)
 {
 	init();
 }
@@ -84,7 +86,7 @@ std::string Mesh::to_string() const
     //	s += v.to_string() + " ";
     //}
     s += ", " + std::to_string(indices.size()) + " indices";
-    s += ", " + std::to_string(textures.size()) + " textures";
+    //s += ", " + std::to_string(textures.size()) + " textures";
 
     /*for (const auto& i : indices) {
         s += std::to_string(i) + " ";

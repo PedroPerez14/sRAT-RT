@@ -11,6 +11,12 @@
 #include <sRAT-RT/shader.h>
 #include <sRAT-RT/mesh.h>
 
+/*
+ * Now the Model class loads the 3d models, along with its meshes and textures,
+ *  but we're ignoring its textures completely since we'll override them with our materials
+ *  in our own Material class. I'll leave the code commented in case it's needed later on.
+ */
+
 class Model
 {
 public:
@@ -32,7 +38,7 @@ public:
     void set_forward_shader(Shader* fwd);
 
 private:
-    std::vector<Texture> textures_loaded;
+    // std::vector<Texture> textures_loaded;
     std::vector<Mesh> meshes;
     std::string directory;
 
@@ -41,8 +47,7 @@ private:
 
     bool processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    std::vector<Texture> loadMaterialTextures(aiMaterial *mat, 
-        aiTextureType type, std::string typeName);
+    // std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
 };
 
 #endif

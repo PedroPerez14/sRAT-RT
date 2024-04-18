@@ -37,7 +37,7 @@ public:
     //Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices, const std::vector<Texture>& textures);
     Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
 
-	void draw(Shader &shader);
+	void draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection);
 
     std::string to_string() const;
 

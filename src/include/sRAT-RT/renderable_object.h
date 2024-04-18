@@ -6,12 +6,27 @@
 
 class RenderableObject : public Object
 {
+
 public:
-    /// TODO: Do I need to put anything else here for now?
-    /// TODO: (part 2): Inherited by Model, maybe also by Particle in the (distant) future?
-    virtual void draw() = 0;
+    /// WARNING: You can use the material's shader or a different one.
+    //      To use the material one, you can set the shader parameter to RO->get_material()
+    //      or you can set it to nullptr. This will call mat->set_shader_uniforms().
+    //
+    //      If you override the shader param MAKE SURE YOU HAVE SET THE UNIFORMS CORRECTLY!
+    virtual void draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection) = 0;
+
+    Material* get_material()
+    {
+        return mat;
+    }
+
+    void set_material(Material* _mat)
+    {
+        mat = _mat;
+    }
+
 protected:
-    Material* mat;          
+    Material* mat;
 };
 
 #endif

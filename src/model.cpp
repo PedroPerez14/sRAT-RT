@@ -5,15 +5,23 @@ Model::Model()
 
 }
 
-void Model::draw(Shader& shader)
+void Model::draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
     {
-        meshes.at(i).draw(shader);
+        if(shader == mat->get_shader() || shader == nullptr)
+        {
+            mat->set_shader_uniforms(model, view, projection);
+        }
+        // else
+        // {
+        //      YOU HAVE TO MANAGE THE UNIFORMS IN THIS CASE!   
+        // }
+        meshes.at(i).draw(shader, model, view, projection);
     }
 }
 
-bool Model::loadModel(const std::string& path)
+bool Model::load_model(const std::string& path)
 {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -26,16 +34,16 @@ bool Model::loadModel(const std::string& path)
     }
     directory = path.substr(0, path.find_last_of('/'));
 
-    return processNode(scene->mRootNode, scene);       // Start recursive processing of nodes
+    return process_node(scene->mRootNode, scene);       // Start recursive processing of nodes
 }
 
-bool Model::processNode(aiNode* node, const aiScene *scene)
+bool Model::process_node(aiNode* node, const aiScene *scene)
 {
     // First process all the nodes
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(processMesh(mesh, scene));
+        meshes.push_back(process_mesh(mesh, scene));
     }
 
     bool success = true;
@@ -43,12 +51,12 @@ bool Model::processNode(aiNode* node, const aiScene *scene)
     for(unsigned int i = 0; i < node->mNumChildren; i++)
     {
         aiNode* child = node->mChildren[i];
-        success = (success && processNode(child, scene));
+        success = (success && process_node(child, scene));
     }
     return success;
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
+Mesh Model::process_mesh(aiMesh* mesh, const aiScene* scene)
 {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;

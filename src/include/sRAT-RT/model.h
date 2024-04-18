@@ -28,19 +28,19 @@ public:
 
     Model(char* path)
     {
-        loadModel(path);
+        load_model(path);
     }
     
-    void draw(Shader& shader);
-    bool loadModel(const std::string& path);
+    void draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection);
+    bool load_model(const std::string& path);
 
 private:
     // std::vector<Texture> textures_loaded;
     std::vector<Mesh> meshes;
     std::string directory;
 
-    bool processNode(aiNode *node, const aiScene *scene);
-    Mesh processMesh(aiMesh *mesh, const aiScene *scene);
+    bool process_node(aiNode *node, const aiScene *scene);
+    Mesh process_mesh(aiMesh *mesh, const aiScene *scene);
     // std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
 };
 

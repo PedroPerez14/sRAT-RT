@@ -40,7 +40,7 @@ void Mesh::init()
     glBindVertexArray(0);
 }
 
-void Mesh::draw(Shader& shader)
+void Mesh::draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
     // // bind appropriate textures
     // unsigned int diffuseNr = 1;

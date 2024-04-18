@@ -54,6 +54,7 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/renderer_def_fwd.h
         src/include/sRAT-RT/renderer_test_uplifting.h
         src/include/sRAT-RT/response_curve.h
+        src/include/sRAT-RT/shader_cache.h
 
         # Source files
         src/include/rgb2spec/rgb2spec.c

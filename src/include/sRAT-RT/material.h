@@ -32,15 +32,11 @@ public:
         
     }
 
-protected:
-    // Name of the material
-    std::string mat_name;
-    
-    // Each material will have a few uniforms (i.e roughness, specularity, etc)
-    //      but those will be defined for each child material.
-    //      A map of <std::string, std::vector<textures or uints> would be overengineering
-
-    // Each material will have one shader attached to it
+protected:    
+    /* WARNING: For direct shading this approach is ok
+    /       but for deferred shading we´ll have to use the same
+    /       shader for every RenderableObject.
+    */
     Shader* mat_shader;
 };
 

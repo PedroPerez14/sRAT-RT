@@ -12,12 +12,12 @@ Other tasks:    - Add a few materials and a test scene with a single dir light
 
 
 
-[17-04-24]
-TODO LIST BEFORE BEING ABLE TO HAVE A RUNNING DEMO:
-    - Implement the Transform class
-    - Implement hierarchy Object(abstract)->RenderableObject(inherits)->Model(inherits again): 
-            - Object should have a Transform member
-            - RenderableObject should have a Material member
+[18-04-24]
+TODO LIST FOR BEING ABLE TO HAVE A RUNNING DEMO:
+    - Implement the Transform class [DONE]
+    - Implement hierarchy Object(abstract)->RenderableObject(inherits)->Model(inherits again): [DONE]
+            - Object should have a Transform member                     [DONE]
+            - RenderableObject should have a Material member            [DONE]
     - Add the 2 render passes/queues (3 but one of them is just the deferred geometry pass)
     - Later on, implement the hierarchy Object(abstract)->Light(inherits)->{point, dir}
             - Light should have a Transform member
@@ -29,3 +29,13 @@ TODO LIST BEFORE BEING ABLE TO HAVE A RUNNING DEMO:
     - Add Camera class !!
             - Add a Camera member to the Renderer superclass
     - Add all the new files into CMakeLists.txt before compiling!
+
+
+    NO NEED TO SET UNIFORMS FOR THE DEFERRED LIGHTING PASS AS LONG AS WE PASS THEM INSIDE THE GBUFFER
+    DO UPLIFITNG ON THE LIGHTING PASS (PUT ONLY THE RGB ORIGINAL TEX COLORS IN THE GBUFFER)
+    
+    I CAN HAVE SEVERAL LIGHTING SHADERS IN THE DEFERRED MATERIALS, BUT I NEED TO FIGURE OUT AN ID STRATEGY (SHARE AN ID AMONG ALL THE INSTANCES OF THE SAME SHADER) FOR THE STENCIL BUFFER
+                        - Option 1: Material class is an abstraction, define "material types" as a const (static?) map, i.e "pbr"-->shader1, shader2, matID (check floatBitsToInt)
+                        - Option 2: Build that fucking shader cache and hash the paths to the vertex + fragment shaders (check floatBitsToInt also)
+    THE ALTERNATIVE IS FUCK IT WE BALL: ÜBERSHADER (ONLY 1 SHADER IN DEFERRED MATERIALS) IN THE DEFERRED QUEUE, AND PUT EVERYTHING AS A MAT_ID
+                        - How to figure out the material id? hmmmm --> just hardcode it in the class and be careful? hmmm

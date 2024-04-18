@@ -54,7 +54,11 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/renderer_def_fwd.h
         src/include/sRAT-RT/renderer_test_uplifting.h
         src/include/sRAT-RT/response_curve.h
-        src/include/sRAT-RT/shader_cache.h
+        src/include/sRAT-RT/render_passes.h
+        src/include/sRAT-RT/material.h
+        src/include/sRAT-RT/deferred_material.h
+        src/include/sRAT-RT/forward_material.h
+        src/include/sRAT-RT/pbr_material.h
 
         # Source files
         src/include/rgb2spec/rgb2spec.c
@@ -67,11 +71,12 @@ add_executable(sRAT-RT
         src/renderer_def_fwd.cpp  
         src/renderer_test_uplifting.cpp
         src/response_curve.cpp
+        src/pbr_material.cpp
         src/main.cpp
 )
 
 include_directories(
-        #sRAT-RT include files
+        # sRAT-RT include files
         src/include
 )
 

@@ -37,22 +37,23 @@ unsigned int texture_from_file(const std::string& full_path)
     return textureID;
 }
 
-PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load, const char* vert_sh_path, 
-                        const char* frag_sh_path, RenderPasses _shader_pass = DEFERRED_ILLUMINATION)
+PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load, 
+                        const char* vert_sh_geom_path, const char* frag_sh_geom_path,
+                        const char* vert_sh_light_path, const char* frag_sh_light_path)
 {
-    mat_name = "PBR_MAETRIAL";
-    shader_pass = _shader_pass;
-
     mat_textures.empty();   // just in case
     // Load the textures and compile the shaders
     load_textures(textures_to_load);
-    mat_shader = new Shader(vert_sh_path, frag_sh_path);
+    shader_geometry_pass = new Shader(vert_sh_geom_path, frag_sh_geom_path);
+    shader_lighting_pass = new Shader(vert_sh_light_path, frag_sh_light_path);
 }
 
 
 /// WARNING: WE OPERATE UNDER THE ASSUMPTION THAT THE TEXTURES ARE IN THE SAME ORDER AS THEIR BINDINGS
-void PBRMaterial::set_shader_uniforms()
+void PBRMaterial::set_shader_uniforms(RenderPass pass) override
 {
+    /// TODO: Change this method
+
     // For this type of PBR shader we assume that every uniform is a texture
     for(unsigned int i = 0; i < mat_textures.size(); i++)
     {
@@ -65,24 +66,42 @@ void PBRMaterial::set_shader_uniforms()
     glActiveTexture(GL_TEXTURE0);
 }
 
-Shader* PBRMaterial::get_shader()
+Shader* PBRMaterial::get_shader(RenderPass pass) override
 {
-    return mat_shader;
+    if(pass == DEFERRED_GEOMETRY)
+    {
+        return shader_geometry_pass;
+    }
+    if(pass == DEFERRED_ILLUMINATION)
+    {
+        return shader_forward_pass;
+    }
+    // should not happen (it will, somehow)
+    return nullptr;
 }
 
-bool PBRMaterial::reload_shader()
+bool PBRMaterial::reload_shaders() override
 {
     bool reload_ok = true;
-    Shader* shader_old = mat_shader;
-    Shader* shader_new = new Shader(mat_shader->m_vertexPath, mat_shader->m_vertexPath, reload_ok);
-    if(reload_ok)
+    bool reload_ok_2 = true;
+
+    Shader* shader_geometry_old = shader_geometry_pass;
+    Shader* shader_geometry_new = new Shader(shader_geometry_pass->m_vertexPath, shader_geometry_pass->m_fragmentPath, reload_ok);
+
+    Shader* shader_lighting_old = shader_lighting_pass;
+    Shader* shader_lighting_new = new Shader(shader_lighting_pass->m_vertexPath, shader_lighting_pass->m_fragmentPath, reload_ok_2);
+
+    if(reload_ok && reload_ok_2)
     {
         // if compilation or linking of the shader failed, it won't be used
-        //      to avoid program-crashing failures
-        mat_shader = shader_new;
-        delete shader_old;
+        //      to avoid program-crashing failures (in this case both have to compile)
+        shader_geometry_pass = shader_geometry_new;
+        shader_lighting_pass = shader_lighting_new;
+        delete shader_geometry_old;
+        delete shader_lighting_old;
     }
-    return reload_ok;
+
+    return (reload_ok && reload_ok_2);
 }
 
 void PBRMaterial::load_textures(const std::vector<Texture>& textures_to_load)

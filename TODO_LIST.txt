@@ -34,8 +34,10 @@ TODO LIST FOR BEING ABLE TO HAVE A RUNNING DEMO:
     NO NEED TO SET UNIFORMS FOR THE DEFERRED LIGHTING PASS AS LONG AS WE PASS THEM INSIDE THE GBUFFER
     DO UPLIFITNG ON THE LIGHTING PASS (PUT ONLY THE RGB ORIGINAL TEX COLORS IN THE GBUFFER)
     
-    I CAN HAVE SEVERAL LIGHTING SHADERS IN THE DEFERRED MATERIALS, BUT I NEED TO FIGURE OUT AN ID STRATEGY (SHARE AN ID AMONG ALL THE INSTANCES OF THE SAME SHADER) FOR THE STENCIL BUFFER
-                        - Option 1: Material class is an abstraction, define "material types" as a const (static?) map, i.e "pbr"-->shader1, shader2, matID (check floatBitsToInt)
-                        - Option 2: Build that fucking shader cache and hash the paths to the vertex + fragment shaders (check floatBitsToInt also)
-    THE ALTERNATIVE IS FUCK IT WE BALL: ÜBERSHADER (ONLY 1 SHADER IN DEFERRED MATERIALS) IN THE DEFERRED QUEUE, AND PUT EVERYTHING AS A MAT_ID
-                        - How to figure out the material id? hmmmm --> just hardcode it in the class and be careful? hmmm
+    FUCK IT WE BALL: ÜBERSHADER WITH A MAT_ID AND IFS (FUCK YEAH)
+                - How to figure out the material id? hmmmm --> just hardcode it in the class and be careful? idk lol
+    List of material ID correspondences between the big ass deferred shader and the material types:
+                - NULL  (only for testing purposes)  --- 0
+                - PBRMaterial (pbr_material .h .cpp) --- 1
+                - ???????                            --- 2
+    (I will later have to change this but for now it's ok to just hardcode stuff and remember it)

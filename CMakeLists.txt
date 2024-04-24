@@ -51,14 +51,12 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/framebuffer.h
         src/include/sRAT-RT/gl_check.h
         src/include/sRAT-RT/renderer.h
-        src/include/sRAT-RT/renderer_def_fwd.h
         src/include/sRAT-RT/renderer_test_uplifting.h
         src/include/sRAT-RT/response_curve.h
         src/include/sRAT-RT/render_passes.h
         src/include/sRAT-RT/material.h
-        src/include/sRAT-RT/deferred_material.h
-        src/include/sRAT-RT/forward_material.h
         src/include/sRAT-RT/pbr_material.h
+        src/include/sRAT-RT/renderer_pbr_test.h
 
         # Source files
         src/include/rgb2spec/rgb2spec.c
@@ -68,10 +66,10 @@ add_executable(sRAT-RT
         src/settings.cpp
         src/app.cpp
         src/scene.cpp
-        src/renderer_def_fwd.cpp  
         src/renderer_test_uplifting.cpp
         src/response_curve.cpp
         src/pbr_material.cpp
+        src/renderer_pbr_test.cpp
         src/main.cpp
 )
 

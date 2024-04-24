@@ -16,10 +16,16 @@ class Material
 {
 public:
     
-    virtual bool reload_shaders() = 0;          // Return false if the shaders could not be reloaded, i.e a compilation or linking error happened
+    virtual bool reload_shader() = 0;           // Return false if the shaders could not be reloaded, i.e a compilation or linking error happened
+    virtual void set_shader_uniforms() = 0;     // We pass everything we need via the gbuffer (uniforms only to the )
+    virtual Shader* get_shader() = 0;           // Returns the current shader in case we need to use() it
     virtual ~Material() = 0;                    // Pure virtual
 
-protected:    
+    RenderPasses get_pass() { return render_pass; }
+
+protected:
+    Shader* mat_shader;
+    RenderPasses render_pass;                   // hard-set by each material constructor (i.e pbr will be deferred, maybe translucid will be forward)
 };
 
 #endif

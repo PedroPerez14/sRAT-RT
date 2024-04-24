@@ -438,11 +438,11 @@ float* RendererTestUplifting::sample_equispaced()
 {
     float* wavelengths = new float[num_wavelengths];
     float delta = (wl_max - wl_min) / (float)num_wavelengths;
-     for(int i = 0; i < num_wavelengths; i++)
-     {
+    for(int i = 0; i < num_wavelengths; i++)
+    {
         // Riemann middle sum
         wavelengths[i] = wl_min + (i * delta) + (delta / 2.0f);
-     }
+    }
      return wavelengths;
 }
 

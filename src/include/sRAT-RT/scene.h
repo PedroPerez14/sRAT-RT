@@ -16,9 +16,9 @@ class Scene
 {
 private:
     Camera* camera;
-    std::vector<Model> m_models;
+    std::vector<RenderableObject> m_renderables;
 
-    bool load_model(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward);
+    bool load_renderable(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward);
 
     void init_fullscreen_quad();    // Init the quad for the deferred lighting pass
 
@@ -27,7 +27,7 @@ public:
     Scene(const std::string& scene_file_path);
 
     Camera* get_camera() const;
-    std::vector<Model> get_models() const;
+    std::vector<RenderableObject> get_renderables() const;
 };
 
 #endif

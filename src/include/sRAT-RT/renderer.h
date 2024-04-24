@@ -5,7 +5,7 @@
 
 /// Virtual class that will have to be overriden by the
 ///     different renderers (to easily define rendering pipelines)
-///     TODO: Should I add more virtual methods here?
+///     INFO: The camera is not included as member here, it's part of the Scene
 class Renderer
 {
 public:
@@ -18,7 +18,6 @@ public:
     virtual void render_ui() = 0;
     virtual void handle_resize(int width, int height) = 0;
 protected:
-    Camera* camera;
 };
 
 #endif

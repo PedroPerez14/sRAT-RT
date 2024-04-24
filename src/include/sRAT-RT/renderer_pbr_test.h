@@ -27,12 +27,13 @@ private:
         int res;                        // N
     };
     const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
-    const std::string wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "MAX_WL", "MIN_WL" };
-    float* (RendererPBRTest::*wl_sampling_funcs[STRAT_COUNT])() = 
+    const std::string m_wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "MAX_WL", "MIN_WL" };
+    float* (RendererPBRTest::*m_wl_sampling_funcs[STRAT_COUNT])() = 
     { &RendererPBRTest::sample_equispaced, &RendererPBRTest::sample_alt1, &RendererPBRTest::sample_alt2 };
 
     //// ATTRIBUTES ////
     std::string m_app_version;
+    Scene* m_last_rendered_scene;               // The last scene we were asked to render
     Shader* m_deferred_lighting_pass_shader;    // draw the screen based on the contents of the framebuffer
     Shader* m_postprocess_pass_shader;          // if null there is no postprocess (do gamma correction here??)
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
@@ -55,7 +56,6 @@ private:
     /// TODO: Add more methods here !!!!
     void init_fullscreen_quad();
     void render_quad();
-    void deferred_lighting_pass();
     //    unsigned int texture_from_file(const char* path, const std::string& directory);
     void lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables);
     void reload_shaders();
@@ -66,6 +66,13 @@ private:
     float* sample_equispaced();
     float* sample_alt1();
     float* sample_alt2();
+
+    /// TODO: To be implemented (most likely tomorrow)
+    void deferred_geometry_pass(Scene* scene);
+    void deferred_lighting_pass(Scene* scene);
+    void forward_pass(Scene* scene);
+    void post_processing_pass(Scene* scene);
+    void blit_depth_buffer();
 };
 
 #endif

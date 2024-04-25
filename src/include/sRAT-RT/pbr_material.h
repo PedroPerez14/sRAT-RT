@@ -12,7 +12,7 @@ public:
 
     // Virtual methods/functions we have to define
     bool reload_shader() override;
-    void set_shader_uniforms() override;
+    void set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection) override;
     Shader* get_shader() override;
     
     

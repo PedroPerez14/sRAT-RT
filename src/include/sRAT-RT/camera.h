@@ -1,3 +1,7 @@
+/*
+/   Based on the work by Joey de Vries in his tutorials from learnopengl
+/   Code has been modified to fit the needs for this project
+*/
 #ifndef CAMERA_H
 #define CAMERA_H
 
@@ -21,6 +25,11 @@ const float PITCH = 0.0f;
 const float SPEED = 2.5f;
 const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
+const float WIDTH = 800.0f;
+const float HEIGHT = 600.0f;
+const float NEAR = 0.1f;
+const float FAR = 200.0f;
+
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
@@ -42,22 +51,34 @@ public:
     float Zoom;
 
     // constructor with vectors
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH, 
+                                                                float width = WIDTH, float height = HEIGHT, float near = NEAR, float far = FAR)
+    : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = position;
         WorldUp = up;
         Yaw = yaw;
         Pitch = pitch;
+        cam_width = width;
+        cam_height = height;
+        near_plane = near;
+        far_plane = far;
         updateCameraVectors();
     }
 
     // constructor with scalar values
-    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch,
+                        float width = WIDTH, float height = HEIGHT, float near = NEAR, float far = FAR) 
+    : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = glm::vec3(posX, posY, posZ);
         WorldUp = glm::vec3(upX, upY, upZ);
         Yaw = yaw;
         Pitch = pitch;
+        cam_width = width;
+        cam_height = height;
+        near_plane = near;
+        far_plane = far;
         updateCameraVectors();
     }
 
@@ -113,7 +134,17 @@ public:
             Zoom = 45.0f;
     }
 
+    glm::mat4 get_projection_matrix()
+    {
+        return glm::perspective(glm::radians(Zoom), cam_width / cam_height, near_plane, far_plane);
+    }
+
 private:
+    float cam_width;
+    float cam_height;
+    float near_plane;
+    float far_plane;
+
     // calculates the front vector from the Camera's (updated) Euler Angles
     void updateCameraVectors()
     {

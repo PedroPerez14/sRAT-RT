@@ -45,6 +45,7 @@ private:
     bool m_do_spectral;                 // if false, we will just render to rgb
     bool m_resample_wls;                // true if we need to resample the wavelengths that we'll use for our computation
     bool m_is_response_in_xyz;          // if true, the response curve will be treated as in xyz space, otherwise, rgb
+    bool m_resize_flag;                 // true if we resized the window in the last frame, to know if we need to resize the camera
     int m_sampling_strat;
     int m_num_wavelengths;
     int m_selected_resp_curve = 0;

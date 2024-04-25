@@ -9,16 +9,21 @@ void Model::draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 proj
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
     {
-        if(shader == mat->get_shader() || shader == nullptr)
+        if(shader == nullptr)
+            shader = mat->get_shader();
+        if(shader == mat->get_shader()) // Intended use case
         {
             mat->set_shader_uniforms(model, view, projection);
         }
         // else
         // {
-        //      YOU HAVE TO MANAGE THE UNIFORMS IN THIS CASE!   
+        //      IF YOU ARE TRYING TO DRAW WITH A SHADER OTHER THAN THE ONE IN THE MATERIAL
+        //      YOU HAVE TO MANAGE THE UNIFORMS YOURSELF! (WILL PROBABLY CRASH)
         // }
-        meshes.at(i).draw(shader, model, view, projection);
+        meshes.at(i).draw(shader);
     }
+    // Good practice to set everything back to default
+    glActiveTexture(GL_TEXTURE0);   // I think I can delete this tbh
 }
 
 bool Model::load_model(const std::string& path)

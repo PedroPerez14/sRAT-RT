@@ -48,10 +48,13 @@ PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load,
 }
 
 
-/// WARNING: WE OPERATE UNDER THE ASSUMPTION THAT THE TEXTURES ARE IN THE SAME ORDER AS THEIR BINDINGS
-void PBRMaterial::set_shader_uniforms()
+/// WARNING: WE OPERATE UNDER THE ASSUMPTION THAT THE TEXTURES ARE DECLARED IN THE SAME ORDER AS THEIR BINDINGS (BE CAREFUL)
+void PBRMaterial::set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
-    /// TODO: Change this method
+    mat_shader->setMat4("model", model);
+    mat_shader->setMat4("view", view);
+    mat_shader->setMat4("projection", projection);
+    mat_shader->set
 
     // For this type of PBR shader we assume that every uniform is a texture
     for(unsigned int i = 0; i < mat_textures.size(); i++)
@@ -61,8 +64,6 @@ void PBRMaterial::set_shader_uniforms()
         glBindTexture(GL_TEXTURE_2D, _tex.id);
         mat_shader->setInt((const std::string)(_tex.type), _tex.binding);
     }
-    // Good practice to set everything back to default
-    glActiveTexture(GL_TEXTURE0);
 }
 
 Shader* PBRMaterial::get_shader()

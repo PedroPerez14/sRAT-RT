@@ -35,8 +35,12 @@ void RendererPBRTest::render_scene(Scene* scene)
         m_resample_wls = false;
         gen_sampled_wls_tex1d();
     }
-    // Get a reference to the camera (to get the necessary data as the projection matrix)
-    Camera* cam = scene->get_camera();
+    if(m_resize_flag)
+    {
+        /// TODO: do something here if applies?
+        /// maybe change camera's aspect ratio by updating width and height?
+        m_resize_flag = false;
+    }
 
     // Clear the framebuffer from the last frame
     m_deferred_framebuffer->bind();
@@ -69,6 +73,7 @@ void RendererPBRTest::render_ui()
 void RendererPBRTest::handle_resize(int w, int h)
 {
     m_deferred_framebuffer->resize(w, h);
+    m_resize_flag = true;
 }
 
 // This should be called only once during initialization, before rendering the scene
@@ -256,15 +261,22 @@ float* RendererPBRTest::sample_alt2()
 
 void RendererPBRTest::deferred_geometry_pass(Scene* scene)
 {
+    // get a pointer to the camera (projection matrix purposes)
+    Camera* camera = scene->get_camera();
     // for every renderable in the scene, if it has to be rendered in this pass,
     //  then set its uniforms correctly and render it (put it in the gbuffer)
     std::vector<RenderableObject> renderables;
     for(auto ro : renderables)
     {
-        if(ro.get_material()->get_pass() == DEFERRED_GEOMETRY)
+        Material* mat = ro.get_material();
+        if(mat->get_pass() == DEFERRED_GEOMETRY)
         {
             // set uniforms (incl. Model, View, Projection matrices)
             // call its draw() method
+            glm::mat4 model = ro.get_transform().get_model();
+            glm::mat4 view = camera->GetViewMatrix();               // from learnOpenGL, I _should_ redo the camera with Transforms
+            glm::mat4 projection = camera->get_projection_matrix(); // needs testing for different resolutions (cam's w and h)
+            ro.draw(mat->get_shader(), model, view, projection);    // The shader will fill the gbuffer accordingly
         }
     }
 }

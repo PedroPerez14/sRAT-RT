@@ -17,13 +17,14 @@ class Material
 public:
     
     virtual bool reload_shader() = 0;           // Return false if the shaders could not be reloaded, i.e a compilation or linking error happened
-    virtual void set_shader_uniforms() = 0;     // We pass everything we need via the gbuffer (uniforms only to the )
+    virtual void set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection) = 0;
     virtual Shader* get_shader() = 0;           // Returns the current shader in case we need to use() it
     virtual ~Material() = 0;                    // Pure virtual
 
     RenderPasses get_pass() { return render_pass; }
 
 protected:
+    unsigned int mat_id;                        // Big deferred shader
     Shader* mat_shader;
     RenderPasses render_pass;                   // hard-set by each material constructor (i.e pbr will be deferred, maybe translucid will be forward)
 };

@@ -6,6 +6,7 @@ RendererPBRTest::RendererPBRTest(Settings* settings, std::unordered_map<colorspa
     m_deferred_lighting_pass_shader = new Shader();
     m_postprocess_pass_shader = new Shader();       // or nullptr if we want to ignore this pass, it's optional
     m_app_version = version;
+    working_colorspace = settings->get_colorspace();                        // Just use sRGB
     m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();  // check tex number for your machine
     unsigned int _width = settings->get_window_width();
     unsigned int _height = settings->get_window_width();
@@ -42,27 +43,30 @@ void RendererPBRTest::render_scene(Scene* scene)
         m_resize_flag = false;
     }
 
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    // Clear default framebuffer (the screen)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Clear the framebuffer from the last frame
     m_deferred_framebuffer->bind();
-    glClearColor(0.0, 0.0, 0.0, 1.0);
     m_deferred_framebuffer->clear();
-    // Clear default framebuffer (the screen)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
     // First rendering pass, the Deferred Geometry Pass: Fill the GBuffer with data
-    deferred_geometry_pass(scene);   // bind any necessary textures, uniforms and luts
+    deferred_geometry_pass(scene);      // Render into the framebuffer
 
     // Second pass, Deferred Shading: Use a giant shader to light all the scene at once
-    deferred_lighting_pass(scene);   // bind the response curves, etc. + draw_quad()
+    deferred_lighting_pass(scene);      // Draw the scene at once (in the framebuffer)
 
-    // Blit the depth buffer before the deferred and the forward draw passes
-    blit_depth_buffer();
+    /// TODO: DO I NEED TO BLIT THE FRAMEBUFFER IF I'M DOING EVERYTHING INSIDE THE SAME FRAMEBUFFER??
+    //blit_depth_buffer();              // In case we need a final forward pass
 
     // Third pass, optional: Forward rendering for some objects that may need it (i.e area lights)
-    forward_pass(scene);             // for every RO in scene with pass = fwd, set_uniforms() + draw(ro.mat->shader)
+    forward_pass(scene);                // Also draws to gbuffer (should be a 2nd FBO) [EMPTY FOR NOW]
+
+    m_deferred_framebuffer->unbind();   // The next pass will render directly into the screen buffer  
 
     // Fourth pass, optional: Post processing, visual effects, tonemapping and gamma correction
-    post_processing_pass(scene);     // what if we don't define anything for this pass??? HMMMmm
+    post_processing_pass(scene);        // Takes the screen buffer as input
 }
 
 void RendererPBRTest::render_ui()
@@ -225,6 +229,16 @@ void RendererPBRTest::check_wls_range()
                 m_wl_min = wl_min_rc;
 }
 
+colorspace RendererPBRTest::get_colorspace() const
+{
+    return working_colorspace;
+}
+
+void RendererPBRTest::set_colorspace(colorspace _c)
+{
+    working_colorspace = _c;
+}
+
 float* RendererPBRTest::sample_equispaced()
 {
     float* wavelengths = new float[m_num_wavelengths];
@@ -283,23 +297,106 @@ void RendererPBRTest::deferred_geometry_pass(Scene* scene)
 
 void RendererPBRTest::deferred_lighting_pass(Scene* scene)
 {
-    // set uniforms for the spectral uplifting
-    // for(wl : wls) { blablabla; Riemann_sum(); apply_curve() }
+    /// INFO: Bindings for the deferred lighting shader:
+    //
+    // The LUTs will get the first 3 bindings, 0, 1 and 2.
+    // The chosen wavelengths texture will get the 4th (3)
+    // And then, the response curve (5th, 4)
+    //
+    // After that, the Framebuffer textures will be allocated:
+    // Position (with material id on its .a component) --> 6th, 5
+    // Normals (w/ Metallic coeff on its .a component only for PBRMat) --> 7th, 6
+    // Albedo (w/ Roughness coeff on its .a component only for PBRMat) --> 8th, 7
+    // Any material specific textures will follow from the 9th (8) place onwards
+    unsigned int lut_3d_ids[3];
+    memcpy(lut_3d_ids, m_lut_textures->at(get_colorspace()).tex_ids, 3 * sizeof(unsigned int));
+    for(int i = 0; i < 3; i++)
+    {
+        // LUTs , 0..2
+        GL_CHECK(glActiveTexture(GL_TEXTURE0 + i));
+        GL_CHECK(glBindTexture(GL_TEXTURE_3D, lut_3d_ids[i]));
+    }
+
+    //Sampled wavelengths, 3
+    GL_CHECK(glActiveTexture(GL_TEXTURE3));
+    GL_CHECK(glBindTexture(GL_TEXTURE_1D, m_sampled_wls_tex_id));
+
+    // Response curve, 4
+    unsigned int r_crv_tex_id = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_tex_id();
+    GL_CHECK(glActiveTexture(GL_TEXTURE4));
+    GL_CHECK(glBindTexture(GL_TEXTURE_1D, r_crv_tex_id));
+
+    // Framebuffer contents, 5..7 and 8..15 if additional textures are required by the material
+    for(int i = 0; i < FRAMEBUFFER_TEX_NUM; i++)
+    {
+        GL_CHECK(glActiveTexture(GL_TEXTURE5 + i));
+        glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i));
+    }
+    
+    /// Now, set the uniforms:
+    m_deferred_lighting_pass_shader->use();
+    set_deferred_lighting_shader_uniforms();
+
+    // Finally, render the fullscreen quad
+    render_quad();
 }
 
+// I just realized this could be the same method as deferred_geometry_pass 
+//      but just adding one more parameter for the pass we want to filter by
 void RendererPBRTest::forward_pass(Scene* scene)
 {
+    Camera* camera = scene->get_camera();
     // Draw directly to screen (after blit-ing the framebuffer)
+    std::vector<RenderableObject> renderables;
+    for(auto ro : renderables)
+    {
+        Material* mat = ro.get_material();
+        if(mat->get_pass() == FORWARD)
+        {
+            glm::mat4 model = ro.get_transform().get_model();
+            glm::mat4 view = camera->GetViewMatrix();
+            glm::mat4 projection = camera->get_projection_matrix();
+            ro.draw(mat->get_shader(), model, view, projection);
+        }
+    }
 }
 
 void RendererPBRTest::post_processing_pass(Scene* scene)
 {
-    // Call the global shader (draw_quad?)
-    // I need to take as entry the screen buffer 
-    // (if the other 2 previous passes draw directly to screen)
+    // Bind the output texture from our framebuffer
+    //  and then render to screen (quad rendering)
+    //  after doing the postprocessing (tonemapping, etc.)
+
+    m_postprocess_pass_shader->use();               // Use the shader
+    /// TODO: Set any relevant uniforms here
+
+    GL_CHECK(glActiveTexture(GL_TEXTURE0));         // Bind the texture
+    glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(0));
+
+    render_quad();                                  // Render (to screen)
 }
 
 void RendererPBRTest::blit_depth_buffer()
 {
-    // just a copypaste I guess?
+    m_deferred_framebuffer->bindForReading();
+    unsigned int _w = m_deferred_framebuffer->getWidth();
+    unsigned int _h = m_deferred_framebuffer->getHeight();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+    glBlitFramebuffer(
+    0, 0, _w, _h, 0, 0, _w, _h, GL_DEPTH_BUFFER_BIT, GL_NEAREST
+    );
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);       
+}
+
+void RendererPBRTest::set_deferred_lighting_shader_uniforms()
+{
+    ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
+    m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
+    m_deferred_lighting_pass_shader->setBool("convert_xyz_to_rgb", m_is_response_in_xyz);
+    m_deferred_lighting_pass_shader->setInt("n_wls", m_num_wavelengths);
+    m_deferred_lighting_pass_shader->setFloat("wl_min", m_wl_min);
+    m_deferred_lighting_pass_shader->setFloat("wl_max", m_wl_max);
+    m_deferred_lighting_pass_shader->setFloat("wl_min_resp", rc->get_wl_min());
+    m_deferred_lighting_pass_shader->setFloat("wl_max_resp", rc->get_wl_max());
+    m_deferred_lighting_pass_shader->setInt("res", 64);  // Do not touch, LUT related
 }

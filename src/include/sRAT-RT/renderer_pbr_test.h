@@ -36,6 +36,7 @@ private:
     Scene* m_last_rendered_scene;               // The last scene we were asked to render
     Shader* m_deferred_lighting_pass_shader;    // draw the screen based on the contents of the framebuffer
     Shader* m_postprocess_pass_shader;          // if null there is no postprocess (do gamma correction here??)
+    colorspace working_colorspace;
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* m_lut_textures;
     std::unordered_map<std::string, ResponseCurve*>* m_response_curves_render;
@@ -64,6 +65,9 @@ private:
     void gen_sampled_wls_tex1d();
     void check_wls_range();
 
+    colorspace get_colorspace() const;
+    void set_colorspace(colorspace _c);
+
     float* sample_equispaced();
     float* sample_alt1();
     float* sample_alt2();
@@ -74,6 +78,7 @@ private:
     void forward_pass(Scene* scene);
     void post_processing_pass(Scene* scene);
     void blit_depth_buffer();
+    void set_deferred_lighting_shader_uniforms();
 };
 
 #endif

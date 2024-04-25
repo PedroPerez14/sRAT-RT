@@ -37,6 +37,7 @@ unsigned int texture_from_file(const std::string& full_path)
     return textureID;
 }
 
+/// TODO: Change the material id system, at least a .h file mapping the materials?
 PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load, 
                         const char* geom_pass_v_shader_path, const char* geom_pass_f_shader_path)
 {
@@ -45,6 +46,7 @@ PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load,
     load_textures(textures_to_load);
     mat_shader = new Shader(geom_pass_v_shader_path, geom_pass_f_shader_path);
     render_pass = DEFERRED_GEOMETRY;
+    mat_id = 1;         // Hardcoded (I'll do some table in a .h file, in the future this _should_ be different)
 }
 
 
@@ -54,7 +56,7 @@ void PBRMaterial::set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4
     mat_shader->setMat4("model", model);
     mat_shader->setMat4("view", view);
     mat_shader->setMat4("projection", projection);
-    mat_shader->set
+    mat_shader->setInt("mat_id", mat_id);
 
     // For this type of PBR shader we assume that every uniform is a texture
     for(unsigned int i = 0; i < mat_textures.size(); i++)
@@ -62,7 +64,7 @@ void PBRMaterial::set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4
         Texture _tex = mat_textures[i];
         glActiveTexture(GL_TEXTURE0 + _tex.binding);
         glBindTexture(GL_TEXTURE_2D, _tex.id);
-        mat_shader->setInt((const std::string)(_tex.type), _tex.binding);
+        mat_shader->setInt((const std::string)(_tex.type), _tex.binding);   // Might explode here
     }
 }
 

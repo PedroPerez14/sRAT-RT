@@ -13,6 +13,7 @@ void Model::draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 proj
             shader = mat->get_shader();
         if(shader == mat->get_shader()) // Intended use case
         {
+            shader->use();
             mat->set_shader_uniforms(model, view, projection);
         }
         // else

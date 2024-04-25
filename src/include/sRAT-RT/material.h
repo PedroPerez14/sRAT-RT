@@ -24,7 +24,7 @@ public:
     RenderPasses get_pass() { return render_pass; }
 
 protected:
-    unsigned int mat_id;                        // Big deferred shader
+    int mat_id;                                 // Big deferred shader
     Shader* mat_shader;
     RenderPasses render_pass;                   // hard-set by each material constructor (i.e pbr will be deferred, maybe translucid will be forward)
 };

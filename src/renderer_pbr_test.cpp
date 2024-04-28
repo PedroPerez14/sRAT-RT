@@ -155,7 +155,7 @@ void RendererPBRTest::reload_shaders()
     std::vector<RenderableObject> _ros_scene = m_last_rendered_scene->get_renderables();
     int num_renderables = _ros_scene.size();
     int num_reloaded = 0;
-    for (auto ro : _ros_scene)
+    for (RenderableObject& ro : _ros_scene)
     {
         if(ro.get_material()->reload_shader())
             num_reloaded++;
@@ -175,8 +175,8 @@ void RendererPBRTest::reload_shaders()
         std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Could not reload the deferred lighting pass shader!" << std::endl; 
     }
 
-    Shader* old_shader = m_postprocess_pass_shader;
-    Shader* new_shader = new Shader(m_postprocess_pass_shader->m_vertexPath, m_postprocess_pass_shader->m_fragmentPath, success);
+    old_shader = m_postprocess_pass_shader;
+    new_shader = new Shader(m_postprocess_pass_shader->m_vertexPath, m_postprocess_pass_shader->m_fragmentPath, success);
     if(success)
     {
         m_postprocess_pass_shader = new_shader;
@@ -280,7 +280,7 @@ void RendererPBRTest::deferred_geometry_pass(Scene* scene)
     // for every renderable in the scene, if it has to be rendered in this pass,
     //  then set its uniforms correctly and render it (put it in the gbuffer)
     std::vector<RenderableObject> renderables;
-    for(auto ro : renderables)
+    for(RenderableObject& ro : renderables)
     {
         Material* mat = ro.get_material();
         if(mat->get_pass() == DEFERRED_GEOMETRY)
@@ -348,10 +348,10 @@ void RendererPBRTest::forward_pass(Scene* scene)
     Camera* camera = scene->get_camera();
     // Draw directly to screen (after blit-ing the framebuffer)
     std::vector<RenderableObject> renderables;
-    for(auto ro : renderables)
+    for(RenderableObject& ro : renderables)
     {
         Material* mat = ro.get_material();
-        if(mat->get_pass() == FORWARD)
+        if(mat->get_pass() == FORWARD_PASS)
         {
             glm::mat4 model = ro.get_transform().get_model();
             glm::mat4 view = camera->GetViewMatrix();

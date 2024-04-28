@@ -43,7 +43,7 @@ bool Scene::load_renderable(const std::string& model_path, std::string v_deferre
     m_renderables.emplace_back();
     RenderableObject& ro = m_renderables.back();
 
-    /// TODO: Substitute this with a method that loads both a RO and 
+    /// TODO: Substitute this with a method that loads both a RO and  [...]
     if(!ro.load_model(model_path)) {
         std::cout << "APP::STATUS::INIT::SCENE_ERROR: Could not load model " << model_path << std::endl;
         return false;

@@ -13,7 +13,7 @@
 #include <sRAT-RT/stb_image.h>
 
 // RENDERERS
-#include <sRAT-RT/renderer_def_fwd.h>
+#include <sRAT-RT/renderer_pbr_test.h>
 #include <sRAT-RT/renderer_test_uplifting.h>
 #include <fstream>
 

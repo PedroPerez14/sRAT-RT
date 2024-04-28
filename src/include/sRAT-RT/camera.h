@@ -5,7 +5,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#pragma once
 #include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -27,8 +26,8 @@ const float SENSITIVITY = 0.1f;
 const float ZOOM = 45.0f;
 const float WIDTH = 800.0f;
 const float HEIGHT = 600.0f;
-const float NEAR = 0.1f;
-const float FAR = 200.0f;
+const float _NEAR = 0.1f;
+const float _FAR = 200.0f;
 
 
 
@@ -51,9 +50,7 @@ public:
     float Zoom;
 
     // constructor with vectors
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH, 
-                                                                float width = WIDTH, float height = HEIGHT, float near = NEAR, float far = FAR)
-    : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH, float width = WIDTH, float height = HEIGHT, float near = _NEAR, float far = _FAR) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = position;
         WorldUp = up;
@@ -68,7 +65,7 @@ public:
 
     // constructor with scalar values
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch,
-                        float width = WIDTH, float height = HEIGHT, float near = NEAR, float far = FAR) 
+                        float width = WIDTH, float height = HEIGHT, float near = _NEAR, float far = _FAR) 
     : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = glm::vec3(posX, posY, posZ);

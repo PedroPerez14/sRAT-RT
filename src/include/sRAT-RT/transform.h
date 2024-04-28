@@ -19,9 +19,9 @@ inline glm::mat4 get_model() const
 {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, pos);
-    model = glm::rotate(model, rot.x, const glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, rot.y, const glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::rotate(model, rot.z, const glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, rot.z, glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::scale(model, scale);
 
     return model;

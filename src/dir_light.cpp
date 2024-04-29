@@ -14,7 +14,7 @@ glm::vec3 DirLight::get_dir()
 
 void DirLight::set_dir(glm::vec3 _dir)
 {
-    dir = _dir
+    dir = _dir;
 }
 
 Spectrum* DirLight::get_spectrum()

@@ -246,7 +246,7 @@ void RendererTestUplifting::set_shader_camera_uniforms(Shader* shader, Camera* c
     /// TODO: HARDCODEADO, CAMBIAR LUEGO
     shader->use();
     glm::mat4 projection = glm::perspective(glm::radians(cam->Zoom), (float)width / (float) height, 0.1f, 100.0f);
-    glm::mat4 view = cam->GetViewMatrix();
+    glm::mat4 view = cam->get_view_matrix();
     glm::mat4 model = glm::mat4(1.0f);
 
     model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));

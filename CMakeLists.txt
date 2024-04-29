@@ -64,6 +64,7 @@ add_executable(sRAT-RT
         # Source files
         src/include/rgb2spec/rgb2spec.c
         src/include/sRAT-RT/stb_image.cpp
+        src/camera.cpp
         src/mesh.cpp
         src/model.cpp
         src/settings.cpp

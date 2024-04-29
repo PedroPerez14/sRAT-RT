@@ -18,17 +18,17 @@ TODO LIST FOR BEING ABLE TO HAVE A RUNNING DEMO:
     - Implement hierarchy Object(abstract)->RenderableObject(inherits)->Model(inherits again): [DONE]
             - Object should have a Transform member                     [DONE]
             - RenderableObject should have a Material member            [DONE]
-    - Add the 2 render passes/queues (3 but one of them is just the deferred geometry pass)
+    - Add the 2 render passes/queues (3 but one of them is just the deferred geometry pass) [DONE, need to do ui]
     - Later on, implement the hierarchy Object(abstract)->Light(inherits)->{point, dir}
-            - Light should have a Transform member
-            - More later on, add the areaLight class that inherits from both Light and Model (class Light : virtual Public Object ?)
-    - Change Scene::Scene() to load a scene file (also define this format somewhere)
-    - Change Scene::load_model() with anything necessary to match the new code structure
-    - Modify Model::draw() and Mesh::draw() to take their Material into account
-            - Call the Material's set_shader_uniforms() method before drawing!
-    - Add Camera class !!
-            - Add a Camera member to the Renderer superclass
-    - Add all the new files into CMakeLists.txt before compiling!
+            - Light should have a Transform member              [DONE]
+            - Much later on, add the areaLight class that inherits from both Light and Model (class Light : virtual Public Object ?)
+    - Change Scene::Scene() to load a scene file (also define this format somewhere)            [HARDCODE IT FOR THE FIRST FEW TRIALS]
+    - Change Scene::load_model() with anything necessary to match the new code structure        [move load_model to load_renderable()]
+    - Modify Model::draw() and Mesh::draw() to take their Material into account                 [done? i think]
+            - Call the Material's set_shader_uniforms() method before drawing!                  [DONE]
+    - Add Camera class !!                                                                       [DONE, it already exists]
+            - Add a Camera member to the Renderer superclass                                    [DONE, it's in Scene, not Renderer]
+    - Add all the new files into CMakeLists.txt before compiling!                               [Gonna need to check this]
 
 
     NO NEED TO SET UNIFORMS FOR THE DEFERRED LIGHTING PASS AS LONG AS WE PASS THEM INSIDE THE GBUFFER

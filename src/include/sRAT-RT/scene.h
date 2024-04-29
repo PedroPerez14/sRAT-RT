@@ -8,6 +8,7 @@
 
 #include <string>
 #include <sRAT-RT/model.h>
+#include <sRAT-RT/light.h>
 #include <sRAT-RT/camera.h>
 #include <sRAT-RT/gl_check.h>
 #include <sRAT-RT/framebuffer.h>
@@ -17,6 +18,7 @@ class Scene
 private:
     Camera* camera;
     std::vector<RenderableObject> m_renderables;
+    std::vector<Light> m_scene_lights;
 
     bool load_renderable(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward);
 

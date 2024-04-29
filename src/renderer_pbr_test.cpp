@@ -288,7 +288,7 @@ void RendererPBRTest::deferred_geometry_pass(Scene* scene)
             // set uniforms (incl. Model, View, Projection matrices)
             // call its draw() method
             glm::mat4 model = ro.get_transform().get_model();
-            glm::mat4 view = camera->GetViewMatrix();               // from learnOpenGL, I _should_ redo the camera with Transforms
+            glm::mat4 view = camera->get_view_matrix();               // from learnOpenGL, I _should_ redo the camera with Transforms
             glm::mat4 projection = camera->get_projection_matrix(); // needs testing for different resolutions (cam's w and h)
             ro.draw(mat->get_shader(), model, view, projection);    // The shader will fill the gbuffer accordingly
         }
@@ -354,7 +354,7 @@ void RendererPBRTest::forward_pass(Scene* scene)
         if(mat->get_pass() == FORWARD_PASS)
         {
             glm::mat4 model = ro.get_transform().get_model();
-            glm::mat4 view = camera->GetViewMatrix();
+            glm::mat4 view = camera->get_view_matrix();
             glm::mat4 projection = camera->get_projection_matrix();
             ro.draw(mat->get_shader(), model, view, projection);
         }

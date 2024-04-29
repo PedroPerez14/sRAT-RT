@@ -279,7 +279,7 @@ void RendererPBRTest::deferred_geometry_pass(Scene* scene)
     Camera* camera = scene->get_camera();
     // for every renderable in the scene, if it has to be rendered in this pass,
     //  then set its uniforms correctly and render it (put it in the gbuffer)
-    std::vector<RenderableObject> renderables;
+    std::vector<RenderableObject> renderables = scene->get_renderables();
     for(RenderableObject& ro : renderables)
     {
         Material* mat = ro.get_material();
@@ -335,7 +335,7 @@ void RendererPBRTest::deferred_lighting_pass(Scene* scene)
     
     /// Now, set the uniforms:
     m_deferred_lighting_pass_shader->use();
-    set_deferred_lighting_shader_uniforms();
+    set_deferred_lighting_shader_uniforms(scene);
 
     // Finally, render the fullscreen quad
     render_quad();
@@ -347,7 +347,7 @@ void RendererPBRTest::forward_pass(Scene* scene)
 {
     Camera* camera = scene->get_camera();
     // Draw directly to screen (after blit-ing the framebuffer)
-    std::vector<RenderableObject> renderables;
+    std::vector<RenderableObject> renderables = scene->get_renderables();
     for(RenderableObject& ro : renderables)
     {
         Material* mat = ro.get_material();
@@ -388,7 +388,7 @@ void RendererPBRTest::blit_depth_buffer()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);       
 }
 
-void RendererPBRTest::set_deferred_lighting_shader_uniforms()
+void RendererPBRTest::set_deferred_lighting_shader_uniforms(Scene* scene)
 {
     ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
     m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
@@ -398,5 +398,14 @@ void RendererPBRTest::set_deferred_lighting_shader_uniforms()
     m_deferred_lighting_pass_shader->setFloat("wl_max", m_wl_max);
     m_deferred_lighting_pass_shader->setFloat("wl_min_resp", rc->get_wl_min());
     m_deferred_lighting_pass_shader->setFloat("wl_max_resp", rc->get_wl_max());
-    m_deferred_lighting_pass_shader->setInt("res", 64);  // Do not touch, LUT related
+    m_deferred_lighting_pass_shader->setInt("res", 64);         // Don't touch, LUT related
+    m_deferred_lighting_pass_shader->setInt("num_lights", scene->get_num_lights());
+    m_deferred_lighting_pass_shader->setVec3("cam_pos", scene->get_camera()->Position);
+
+    // now, set the lights in the scene
+    std::vector<Light> scene_lights = scene->get_lights();
+    for(Light& light : scene_lights)
+    {
+        /// TODO: Do some shit here, I guess
+    }
 }

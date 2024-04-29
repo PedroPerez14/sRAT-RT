@@ -53,9 +53,11 @@ PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load,
 /// WARNING: WE OPERATE UNDER THE ASSUMPTION THAT THE TEXTURES ARE DECLARED IN THE SAME ORDER AS THEIR BINDINGS (BE CAREFUL)
 void PBRMaterial::set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
+    glm::mat3 normal_mat = glm::mat3(glm::transpose(glm::inverse(model)));
     mat_shader->setMat4("model", model);
     mat_shader->setMat4("view", view);
     mat_shader->setMat4("projection", projection);
+    mat_shader->setMat4("normal_mat", normal_mat);  // don't compute this in the vertex shader please
     mat_shader->setInt("mat_id", mat_id);
 
     // For this type of PBR shader we assume that every uniform is a texture

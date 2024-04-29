@@ -30,6 +30,8 @@ public:
 
     Camera* get_camera() const;
     std::vector<RenderableObject> get_renderables() const;
+    std::vector<Light> get_lights() const;
+    int get_num_lights() const;
 };
 
 #endif

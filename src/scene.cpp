@@ -66,10 +66,12 @@ std::vector<RenderableObject> Scene::get_renderables() const
     return m_renderables;
 }
 
-/// Needs the framebuffer to be bound beforehand! 
-//  (call framebuffer->bind() in run() beofre doing scene->draw() and it's ok)
-
-void wasd(std::vector<GLuint> &vector)
+std::vector<Light> Scene::get_lights() const
 {
-    vector.clear();
+    return m_scene_lights;
+}
+
+int Scene::get_num_lights() const 
+{
+    return m_scene_lights.size();
 }

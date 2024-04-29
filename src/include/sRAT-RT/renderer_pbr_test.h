@@ -78,7 +78,7 @@ private:
     void forward_pass(Scene* scene);
     void post_processing_pass(Scene* scene);
     void blit_depth_buffer();
-    void set_deferred_lighting_shader_uniforms();
+    void set_deferred_lighting_shader_uniforms(Scene* scene);
 };
 
 #endif

@@ -5,6 +5,7 @@ DirLight::DirLight(glm::vec3 _dir, Spectrum* _spectrum, float _power_multiplier 
     emission_spectrum = _spectrum;
     power_multiplier = _power_multiplier;
     dir = _dir;
+    l_type = DIR_LIGHT;
 }
 
 glm::vec3 DirLight::get_dir()
@@ -35,4 +36,9 @@ float DirLight::get_power_multiplier()
 void DirLight::set_power_multiplier(float pm)
 {
     power_multiplier = pm;
+}
+
+light_type DirLight::get_light_type()
+{
+    return l_type;
 }

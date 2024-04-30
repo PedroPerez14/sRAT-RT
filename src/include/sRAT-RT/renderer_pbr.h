@@ -1,5 +1,5 @@
-#ifndef _RENDERER_PBR_TEST_CLASS_H_
-#define _RENDERER_PBR_TEST_CLASS_H_
+#ifndef _RENDERER_PBR_CLASS_H_
+#define _RENDERER_PBR_CLASS_H_
 
 #include <sRAT-RT/settings.h>
 #include <sRAT-RT/renderer.h>
@@ -9,10 +9,10 @@
 
 #define FRAMEBUFFER_TEX_NUM 8       // max for my testing device, should I change this???
 
-class RendererPBRTest : public Renderer
+class RendererPBR : public Renderer
 {
 public:
-    RendererPBRTest(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
+    RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
                     std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version);
 
     void render_scene(Scene* scene);
@@ -28,8 +28,8 @@ private:
     };
     const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
     const std::string m_wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "MAX_WL", "MIN_WL" };
-    float* (RendererPBRTest::*m_wl_sampling_funcs[STRAT_COUNT])() = 
-    { &RendererPBRTest::sample_equispaced, &RendererPBRTest::sample_alt1, &RendererPBRTest::sample_alt2 };
+    float* (RendererPBR::*m_wl_sampling_funcs[STRAT_COUNT])() = 
+    { &RendererPBR::sample_equispaced, &RendererPBR::sample_alt1, &RendererPBR::sample_alt2 };
 
     //// ATTRIBUTES ////
     std::string m_app_version;

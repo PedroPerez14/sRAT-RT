@@ -56,6 +56,45 @@ bool Scene::load_renderable(const std::string& model_path, std::string v_deferre
     return true;
 }
 
+void Scene::generate_emission_tex_array()
+{
+    glGenTextures(1, &m_lights_emission_tex_array_id);
+    glBindTexture(GL_TEXTURE_1D_ARRAY, m_lights_emission_tex_array_id);
+
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Determine the maximum size among all spectral data arrays
+    GLsizei maxArraySize = 0;
+    for (Light& light : m_scene_lights) {
+        GLsizei arraySize = light.get_spectrum()->get_n_samples();
+        if (arraySize > maxArraySize) {
+            maxArraySize = arraySize;
+        }
+    }
+
+    // Allocate storage for the texture array
+    GLsizei numLayers = m_scene_lights.size();
+    glTexStorage2D(GL_TEXTURE_1D_ARRAY, 1, GL_RED, maxArraySize, numLayers);
+
+    // Upload data to the texture array
+    for (size_t i = 0; i < numLayers; ++i) {
+        Light& light = m_scene_lights.at(i);
+        GLsizei arraySize = light.get_spectrum()->get_n_samples();
+        float* data = new float[arraySize];
+        for(int j = 0; j < arraySize; j++)
+        {
+            data[j] = light.get_spectrum()->get_responses()->at(j).response;
+        }
+        glTexSubImage2D(GL_TEXTURE_1D_ARRAY, 0, 0, i, arraySize, 1, GL_RED, GL_FLOAT,  data);
+        delete data;
+    }
+    /// TODO: Modified from chatgpt's suggestion (I only used it for solving the 256-texture-issue i swear!)
+    /// I fixed some stuff and it _should_ work, but if something explodes I'd bet it's here
+}
+
 Camera* Scene::get_camera() const
 {
     return camera;
@@ -74,4 +113,9 @@ std::vector<Light> Scene::get_lights() const
 int Scene::get_num_lights() const 
 {
     return m_scene_lights.size();
+}
+
+unsigned int Scene::get_emission_tex_array_id() const
+{
+    return m_lights_emission_tex_array_id;
 }

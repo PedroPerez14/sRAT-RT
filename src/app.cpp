@@ -13,7 +13,7 @@
 #include <sRAT-RT/stb_image.h>
 
 // RENDERERS
-#include <sRAT-RT/renderer_pbr_test.h>
+#include <sRAT-RT/renderer_pbr.h>
 #include <sRAT-RT/renderer_test_uplifting.h>
 #include <fstream>
 
@@ -94,8 +94,8 @@ void App::read_app_version()
 }
 
 // Class functions and methods
-
-App::App()
+/// TODO: delete default constructor?
+App::App()      
 {
     settings = new Settings();
     read_app_version();
@@ -226,8 +226,6 @@ void App::process_input(GLFWwindow* window, Camera* camera, float deltaTime)
 }
 
 /// Configure GLAD, callbacks and such, before going into the rendering loop in run()
-/// NOTE: We're going for a mix of deferred and forward pipeline, so we'll render in 2 passes
-///         even if one of them does no effective work.
 bool App::init()
 {
     // Init GLAD
@@ -262,12 +260,9 @@ bool App::init()
 
     load_response_curves(settings->get_path_response_curves());
 
-    //renderer = new RendererDeferredAndForward(settings->get_window_width(), settings->get_window_height());
-    renderer = new RendererTestUplifting(settings, look_up_tables, response_curves, app_version);
-    // renderer = new RendererTestUplifting(settings->get_window_width(), settings->get_window_height(), 
-    //                                     look_up_tables, response_curves, app_version, settings->get_colorspace(), 
-    //                                     settings->get_num_wavelengths(), settings->get_wl_min(), settings->get_wl_max());
-    
+    //renderer = new RendererTestUplifting(settings, look_up_tables, response_curves, app_version);
+    renderer = new RendererPBR(settings, look_up_tables, response_curves, app_version);
+
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
 

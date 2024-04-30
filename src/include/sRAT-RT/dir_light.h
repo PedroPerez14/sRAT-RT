@@ -20,6 +20,8 @@ public:
     float get_power_multiplier() override;
     void set_power_multiplier(float pm);
 
+    light_type get_light_type() override;
+
 protected:
     glm::vec3 dir;                  /// Direction FROM the light, not towards it!
 };

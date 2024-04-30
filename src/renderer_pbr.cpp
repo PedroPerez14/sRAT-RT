@@ -1,6 +1,7 @@
-#include <sRAT-RT/renderer_pbr_test.h>
+#include <sRAT-RT/dir_light.h>
+#include <sRAT-RT/renderer_pbr.h>
 
-RendererPBRTest::RendererPBRTest(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
+RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
                     std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version)
 {
     m_deferred_lighting_pass_shader = new Shader();
@@ -27,7 +28,7 @@ RendererPBRTest::RendererPBRTest(Settings* settings, std::unordered_map<colorspa
     init_fullscreen_quad();                         // Finally, generate our full screen quad
 }
 
-void RendererPBRTest::render_scene(Scene* scene)
+void RendererPBR::render_scene(Scene* scene)
 {
     // Update the reference to the last rendered scene
     m_last_rendered_scene = scene;
@@ -69,19 +70,19 @@ void RendererPBRTest::render_scene(Scene* scene)
     post_processing_pass(scene);        // Takes the screen buffer as input
 }
 
-void RendererPBRTest::render_ui()
+void RendererPBR::render_ui()
 {
     /// TODO: IMPLEMENTAR DE LO ÚLTIMO PARA ASEGURARME DE QUE HAGO BIEN LAS RENDER PASSES
 }
 
-void RendererPBRTest::handle_resize(int w, int h)
+void RendererPBR::handle_resize(int w, int h)
 {
     m_deferred_framebuffer->resize(w, h);
     m_resize_flag = true;
 }
 
 // This should be called only once during initialization, before rendering the scene
-void RendererPBRTest::init_fullscreen_quad()
+void RendererPBR::init_fullscreen_quad()
 {
     GL_CHECK(glGenVertexArrays(1, &m_fullscreen_vao));
     GL_CHECK(glBindVertexArray(m_fullscreen_vao));
@@ -89,7 +90,7 @@ void RendererPBRTest::init_fullscreen_quad()
     GL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL));
 }
 
-void RendererPBRTest::render_quad()
+void RendererPBR::render_quad()
 {
     glDisable(GL_DEPTH_TEST);                   // disable depth test so screen-space quad isn't discarded   
     glBindVertexArray(m_fullscreen_vao);
@@ -98,7 +99,7 @@ void RendererPBRTest::render_quad()
     glBindVertexArray(0);
 }
 
-void RendererPBRTest::lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables)
+void RendererPBR::lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>* look_up_tables)
 {
     m_lut_textures = new std::unordered_map<colorspace, lut_as_tex3d>();
 
@@ -149,7 +150,7 @@ void RendererPBRTest::lut_textures_create(std::unordered_map<colorspace, RGB2Spe
 
 /// TODO: Should I make this return a bool or have 2 ref. bools 
 ///     for the scene object shaders and the deferred pass one?
-void RendererPBRTest::reload_shaders()
+void RendererPBR::reload_shaders()
 {
     
     std::vector<RenderableObject> _ros_scene = m_last_rendered_scene->get_renderables();
@@ -192,7 +193,7 @@ void RendererPBRTest::reload_shaders()
     << " / " << num_renderables << " material shaders for renderable objects in the scene!" << std::endl;
 }
 
-void RendererPBRTest::populate_resp_curves_list()
+void RendererPBR::populate_resp_curves_list()
 {
     m_response_curve_names.empty();
     for (auto i = m_response_curves_render->begin(); i != m_response_curves_render->end(); i++)
@@ -201,7 +202,7 @@ void RendererPBRTest::populate_resp_curves_list()
     }
 }
 
-void RendererPBRTest::gen_sampled_wls_tex1d()
+void RendererPBR::gen_sampled_wls_tex1d()
 {
     float* wavelengths = std::invoke(m_wl_sampling_funcs[m_sampling_strat], this);
 
@@ -219,7 +220,7 @@ void RendererPBRTest::gen_sampled_wls_tex1d()
     delete wavelengths;
 }
 
-void RendererPBRTest::check_wls_range()
+void RendererPBR::check_wls_range()
 {
     float wl_min_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_min();
     float wl_max_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_max();
@@ -229,17 +230,17 @@ void RendererPBRTest::check_wls_range()
                 m_wl_min = wl_min_rc;
 }
 
-colorspace RendererPBRTest::get_colorspace() const
+colorspace RendererPBR::get_colorspace() const
 {
     return working_colorspace;
 }
 
-void RendererPBRTest::set_colorspace(colorspace _c)
+void RendererPBR::set_colorspace(colorspace _c)
 {
     working_colorspace = _c;
 }
 
-float* RendererPBRTest::sample_equispaced()
+float* RendererPBR::sample_equispaced()
 {
     float* wavelengths = new float[m_num_wavelengths];
     float delta = (m_wl_max - m_wl_min) / (float)m_num_wavelengths;
@@ -252,7 +253,7 @@ float* RendererPBRTest::sample_equispaced()
 }
 
 /// dummy function, change at some point
-float* RendererPBRTest::sample_alt1()
+float* RendererPBR::sample_alt1()
 {
     float* wavelengths = new float[m_num_wavelengths];
     for(int i = 0; i < m_num_wavelengths; i++)
@@ -263,7 +264,7 @@ float* RendererPBRTest::sample_alt1()
 }
 
 /// dummy function, change at some point
-float* RendererPBRTest::sample_alt2()
+float* RendererPBR::sample_alt2()
 {
     float* wavelengths = new float[m_num_wavelengths];
     for(int i = 0; i < m_num_wavelengths; i++)
@@ -273,7 +274,7 @@ float* RendererPBRTest::sample_alt2()
     return wavelengths;
 }
 
-void RendererPBRTest::deferred_geometry_pass(Scene* scene)
+void RendererPBR::deferred_geometry_pass(Scene* scene)
 {
     // get a pointer to the camera (projection matrix purposes)
     Camera* camera = scene->get_camera();
@@ -295,7 +296,7 @@ void RendererPBRTest::deferred_geometry_pass(Scene* scene)
     }
 }
 
-void RendererPBRTest::deferred_lighting_pass(Scene* scene)
+void RendererPBR::deferred_lighting_pass(Scene* scene)
 {
     /// INFO: Bindings for the deferred lighting shader:
     //
@@ -326,10 +327,14 @@ void RendererPBRTest::deferred_lighting_pass(Scene* scene)
     GL_CHECK(glActiveTexture(GL_TEXTURE4));
     GL_CHECK(glBindTexture(GL_TEXTURE_1D, r_crv_tex_id));
 
-    // Framebuffer contents, 5..7 and 8..15 if additional textures are required by the material
+    // Scene lights spectral response, 5
+    GL_CHECK(glActiveTexture(GL_TEXTURE5));
+    GL_CHECK(glBindTexture(GL_TEXTURE_1D_ARRAY, scene->get_emission_tex_array_id()));
+
+    // Framebuffer contents, 6..15 if additional textures are required by the material
     for(int i = 0; i < FRAMEBUFFER_TEX_NUM; i++)
     {
-        GL_CHECK(glActiveTexture(GL_TEXTURE5 + i));
+        GL_CHECK(glActiveTexture(GL_TEXTURE6 + i));
         glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i));
     }
     
@@ -343,7 +348,7 @@ void RendererPBRTest::deferred_lighting_pass(Scene* scene)
 
 // I just realized this could be the same method as deferred_geometry_pass 
 //      but just adding one more parameter for the pass we want to filter by
-void RendererPBRTest::forward_pass(Scene* scene)
+void RendererPBR::forward_pass(Scene* scene)
 {
     Camera* camera = scene->get_camera();
     // Draw directly to screen (after blit-ing the framebuffer)
@@ -361,7 +366,7 @@ void RendererPBRTest::forward_pass(Scene* scene)
     }
 }
 
-void RendererPBRTest::post_processing_pass(Scene* scene)
+void RendererPBR::post_processing_pass(Scene* scene)
 {
     // Bind the output texture from our framebuffer
     //  and then render to screen (quad rendering)
@@ -376,7 +381,7 @@ void RendererPBRTest::post_processing_pass(Scene* scene)
     render_quad();                                  // Render (to screen)
 }
 
-void RendererPBRTest::blit_depth_buffer()
+void RendererPBR::blit_depth_buffer()
 {
     m_deferred_framebuffer->bindForReading();
     unsigned int _w = m_deferred_framebuffer->getWidth();
@@ -388,7 +393,7 @@ void RendererPBRTest::blit_depth_buffer()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);       
 }
 
-void RendererPBRTest::set_deferred_lighting_shader_uniforms(Scene* scene)
+void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
 {
     ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
     m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
@@ -404,8 +409,34 @@ void RendererPBRTest::set_deferred_lighting_shader_uniforms(Scene* scene)
 
     // now, set the lights in the scene
     std::vector<Light> scene_lights = scene->get_lights();
+    int i = 0;
     for(Light& light : scene_lights)
     {
-        /// TODO: Do some shit here, I guess
+        // Don't look at this code, it's embarrasing 
+        // (I should consider 2 separate vectors, one for dir lights and another for point lights)
+        if(light.get_light_type() == DIR_LIGHT)
+        {
+            DirLight* dl = dynamic_cast<DirLight*>(&light);
+            m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(dl->get_transform().get_pos(), 0));
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].direction", dl->get_dir());
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", glm::vec3(0.0f, 0.0f, 0.0f));
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].emission_rgb", dl->get_spectrum()->get_responses_rgb());
+            m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].emission_mult", dl->get_power_multiplier());
+            m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_min", dl->get_spectrum()->get_wl_min());
+            m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_max", dl->get_spectrum()->get_wl_max());
+        }
+        else // if(POINT_LIGHT)
+        {
+            /// TODO: Implement Point Lights, do after the first few tests
+            // PointLight* pl = dynamic_cast<PointLight*>(&light);
+            // m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(pl->get_transform().get_pos(), 1));
+            // m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].direction", glm::vec3(0.0f,0.0f,0.0f));
+            // m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", pl->get_attenuation());
+            // m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].emission_rgb", pl->get_spectrum()->get_responses_rgb());
+            // m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].emission_mult", pl->get_power_multiplier());
+            // m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_min", pl->get_spectrum()->get_wl_min());
+            // m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_max", pl->get_spectrum()->get_wl_max());
+        }
+        i++;
     }
 }

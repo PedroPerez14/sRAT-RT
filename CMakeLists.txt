@@ -56,7 +56,7 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/render_passes.h
         src/include/sRAT-RT/material.h
         src/include/sRAT-RT/pbr_material.h
-        src/include/sRAT-RT/renderer_pbr_test.h
+        src/include/sRAT-RT/renderer_pbr.h
         src/include/sRAT-RT/light.h
         src/include/sRAT-RT/light_spectrum.h
         src/include/sRAT-RT/dir_light.h
@@ -73,7 +73,7 @@ add_executable(sRAT-RT
         src/renderer_test_uplifting.cpp
         src/response_curve.cpp
         src/pbr_material.cpp
-        src/renderer_pbr_test.cpp
+        src/renderer_pbr.cpp
         src/light_spectrum.cpp
         src/dir_light.cpp
         src/main.cpp

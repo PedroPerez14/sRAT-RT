@@ -19,11 +19,11 @@ private:
     Camera* camera;
     std::vector<RenderableObject> m_renderables;
     std::vector<Light> m_scene_lights;
+    unsigned int m_lights_emission_tex_array_id;
 
     bool load_renderable(const std::string& model_path, std::string v_deferred, std::string f_deferred, std::string v_forward, std::string f_forward);
 
-    void init_fullscreen_quad();    // Init the quad for the deferred lighting pass
-
+    void generate_emission_tex_array();
 public:
     Scene();
     Scene(const std::string& scene_file_path);
@@ -32,6 +32,7 @@ public:
     std::vector<RenderableObject> get_renderables() const;
     std::vector<Light> get_lights() const;
     int get_num_lights() const;
+    unsigned int get_emission_tex_array_id() const;
 };
 
 #endif

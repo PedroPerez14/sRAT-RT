@@ -18,23 +18,26 @@ layout (binding = 1) uniform sampler3D LUT_2;
 layout (binding = 2) uniform sampler3D LUT_3;
 layout (binding = 3) uniform sampler1D tex_wavelengths;
 layout (binding = 4) uniform sampler1D resp_curve;
-layout (binding = 5) uniform sampler1D framebuffer_tex1;    // pos +  mat_id
-layout (binding = 6) uniform sampler1D framebuffer_tex2;    // normal + ??? (1 float free for materials to use)
-layout (binding = 7) uniform sampler1D framebuffer_tex3;    // albedo + ??? (1 float free for materials to use)
-layout (binding = 8) uniform sampler1D framebuffer_tex4;    // free for materials to use
-layout (binding = 9) uniform sampler1D framebuffer_tex5;    // free for materials to use
-layout (binding = 10) uniform sampler1D framebuffer_tex6;   // free for materials to use
-layout (binding = 11) uniform sampler1D framebuffer_tex7;   // free for materials to use
-layout (binding = 12) uniform sampler1D framebuffer_tex8;   // free for materials to use
+layout (binding = 5) uniform sampler1DArray l_em_spec;      // array of 1D textures containing the spectral emission of every light in the scene
+/////////////////////////////////// FRAMEBUFFER BEGINS HERE ///////////////////////////////////
+layout (binding = 6) uniform sampler1D framebuffer_tex1;    // pos +  mat_id
+layout (binding = 7) uniform sampler1D framebuffer_tex2;    // normal + ??? (1 float free for materials to use)
+layout (binding = 8) uniform sampler1D framebuffer_tex3;    // albedo + ??? (1 float free for materials to use)
+layout (binding = 9) uniform sampler1D framebuffer_tex4;    // free for materials to use
+layout (binding = 10) uniform sampler1D framebuffer_tex5;   // free for materials to use
+layout (binding = 11) uniform sampler1D framebuffer_tex6;   // free for materials to use
+layout (binding = 12) uniform sampler1D framebuffer_tex7;   // free for materials to use
+layout (binding = 13) uniform sampler1D framebuffer_tex8;   // free for materials to use
 
-struct Light
+struct Light                                                // Emission spectrum has to be in a separate texture array :/
 {
     vec4 position;                                          // if position.w == 0, directional light, else, point light
     vec3 direction;                                         // only for directional lights
     vec3 attenuation;                                       // constant, linear, quadratic, in that order (unused for now)
     vec3 emission_rgb;                                      // TODO: I still have to do rgb rendering
-    sampler1D emission_spec;                                // contains radiance for each wl in range [wl_min_light ... wl_max_light] 
     float emission_mult;                                    // added by me in case i want to increase the light's radiance artificially
+    float wl_min;                                           // The lowest wavelength for this light's radiance emission
+    float wl_max;                                           // The highest wavelength for this light's radiance emission
 };
 
 
@@ -302,7 +305,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
         }
         // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
         float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
-        float radiance = texture(l.emission_spec, _l_emission_coord) * l.emission_mult * att;
+        float radiance = texture(l_em_spec[i], _l_emission_coord) * l.emission_mult * att;
 
         // Cook-Torrance BRDF
         float NDF = ggx_dist(N, H, roughness);

@@ -17,6 +17,9 @@ public:
     Spectrum* get_spectrum() override;
     void set_spectrum(Spectrum* spec) override;
 
+    float get_power_multiplier() override;
+    void set_power_multiplier(float pm);
+
 protected:
     glm::vec3 dir;                  /// Direction FROM the light, not towards it!
 };

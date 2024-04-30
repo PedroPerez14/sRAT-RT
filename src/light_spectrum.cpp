@@ -1,9 +1,12 @@
 #include <fstream>
 #include <sstream>
+#include <glad/gl.h>
+#include <glm/glm.hpp>
 #include <sRAT-RT/light_spectrum.h>
 
-Spectrum::Spectrum(std::string spectrum_file, bool rgb) : is_rgb(rgb)
+Spectrum::Spectrum(std::string spectrum_file, glm::vec3 resp_rgb = glm::vec3(1.0f,1.0f,1.0f))
 {
+    responses_rgb = resp_rgb;
     responses = new std::vector<light_response_sample>();
     n_samples = 0;
     std::ifstream f(spectrum_file);
@@ -32,14 +35,54 @@ Spectrum::Spectrum(std::string spectrum_file, bool rgb) : is_rgb(rgb)
             n_samples++;
         }
     }
+    gen_emission_tex_1d();          // sets the id class member
 }
 
-std::vector<light_response_sample>* Spectrum::get_responses()
+float Spectrum::get_wl_min() const
+{
+    return min_wl;
+}
+
+float Spectrum::get_wl_max() const
+{
+    return max_wl;
+}
+
+int Spectrum::get_n_samples() const
+{
+    return n_samples;
+}
+
+unsigned int Spectrum::get_emission_tex_id() const
+{
+    return emission_tex_id;
+}
+
+glm::vec3 Spectrum::get_responses_rgb() const
+{
+    return responses_rgb;
+}
+
+std::vector<light_response_sample>* Spectrum::get_responses() const
 {
     return responses;
 }
 
-bool Spectrum::is_rgb_response()
+void Spectrum::gen_emission_tex_1d()
 {
-    return is_rgb;
+    float* buffer_tex = new float[n_samples];
+    for(int i = 0; i < n_samples; i++)
+    {
+        buffer_tex[i] = responses->at(i).response;
+    }
+
+    glGenTextures(1, &emission_tex_id);
+    glBindTexture(GL_TEXTURE_1D, emission_tex_id);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RED, n_samples, 0, GL_RED, GL_FLOAT, buffer_tex);
+    delete buffer_tex;
+
 }

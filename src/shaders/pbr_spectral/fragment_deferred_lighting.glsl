@@ -1,17 +1,17 @@
 #version 450 core
 
-#define MAX_NUM_LIGHTS 256
+#define MAX_NUM_LIGHTS 256                                  // let's not put so many lights in a scene pls
 
 in vec2 fTexcoords;
 
 layout (location = 0) out vec4 out_color;
-layout (location = 1) out vec4 debug_1;
-layout (location = 2) out vec4 debug_2;
-layout (location = 3) out vec4 debug_3;
-layout (location = 4) out vec4 debug_4;
-layout (location = 5) out vec4 debug_5;
-layout (location = 6) out vec4 debug_6;
-layout (location = 7) out vec4 debug_7;
+layout (location = 1) out vec4 debug_1;                     // free for debugging purposes
+layout (location = 2) out vec4 debug_2;                     // free for debugging purposes
+layout (location = 3) out vec4 debug_3;                     // free for debugging purposes
+layout (location = 4) out vec4 debug_4;                     // free for debugging purposes
+layout (location = 5) out vec4 debug_5;                     // free for debugging purposes
+layout (location = 6) out vec4 debug_6;                     // free for debugging purposes
+layout (location = 7) out vec4 debug_7;                     // free for debugging purposes
 
 layout (binding = 0) uniform sampler3D LUT_1;
 layout (binding = 1) uniform sampler3D LUT_2;
@@ -19,24 +19,36 @@ layout (binding = 2) uniform sampler3D LUT_3;
 layout (binding = 3) uniform sampler1D tex_wavelengths;
 layout (binding = 4) uniform sampler1D resp_curve;
 layout (binding = 5) uniform sampler1D framebuffer_tex1;    // pos +  mat_id
-layout (binding = 6) uniform sampler1D framebuffer_tex2;    // normal + ???
-layout (binding = 7) uniform sampler1D framebuffer_tex3;    // albedo + ???
-layout (binding = 8) uniform sampler1D framebuffer_tex4;    // free for materials
-layout (binding = 9) uniform sampler1D framebuffer_tex5;    // free for materials
-layout (binding = 10) uniform sampler1D framebuffer_tex6;   // free for materials
-layout (binding = 11) uniform sampler1D framebuffer_tex7;   // free for materials
-layout (binding = 12) uniform sampler1D framebuffer_tex8;   // free for materials
+layout (binding = 6) uniform sampler1D framebuffer_tex2;    // normal + ??? (1 float free for materials to use)
+layout (binding = 7) uniform sampler1D framebuffer_tex3;    // albedo + ??? (1 float free for materials to use)
+layout (binding = 8) uniform sampler1D framebuffer_tex4;    // free for materials to use
+layout (binding = 9) uniform sampler1D framebuffer_tex5;    // free for materials to use
+layout (binding = 10) uniform sampler1D framebuffer_tex6;   // free for materials to use
+layout (binding = 11) uniform sampler1D framebuffer_tex7;   // free for materials to use
+layout (binding = 12) uniform sampler1D framebuffer_tex8;   // free for materials to use
 
-uniform bool do_spectral_uplifting;
-uniform bool convert_xyz_to_rgb;
-uniform int n_wls;
-uniform float wl_min;
-uniform float wl_max;
-uniform float wl_min_resp;
-uniform float wl_max_resp;
-uniform int res = 64;
-uniform vec3 cam_pos;
-uniform int num_lights;
+struct Light
+{
+    vec4 position;                                          // if position.w == 0, directional light, else, point light
+    vec3 direction;                                         // only for directional lights
+    vec3 attenuation;                                       // constant, linear, quadratic, in that order (unused for now)
+    vec3 emission_rgb;                                      // TODO: I still have to do rgb rendering
+    sampler1D emission_spec;                                // contains radiance for each wl in range [wl_min_light ... wl_max_light] 
+    float emission_mult;                                    // added by me in case i want to increase the light's radiance artificially
+};
+
+
+uniform bool do_spectral_uplifting;                         // if true, spectral rendering, if false, rgb rendering
+uniform bool convert_xyz_to_rgb;                            // in case our response curve is in xyz space
+uniform int n_wls;                                          // number of wavelengths to sample for rendering
+uniform float wl_min;                                       // the min wavelength of our sampleable range
+uniform float wl_max;                                       // the max wavelength of our sampleable range
+uniform float wl_min_resp;                                  // the smallest wavelength in the response curve
+uniform float wl_max_resp;                                  // the biggest wavelength in the repsonse curve
+uniform int res = 64;                                       // don't touch, LUT_3D related
+uniform vec3 cam_pos;                                       // the position of our current camera
+uniform int num_lights;                                     // real number of lights in the scene
+uniform Light scene_lights[MAX_NUM_LIGHTS];                 // the lights in our scene
 
 //// SOME CONSTANT VARIABLES ////
 const mat3 XYZ_TO_RGB_M = mat3(
@@ -51,7 +63,7 @@ const mat3 RGB_TO_XYZ_M = mat3(
     0.0193, 0.1192, 0.9505
 );
 
-const float PI = 3.14159265359;
+const float PI = 3.14159265359;                             // pi
 
 ///////////////////////////////////////// FUNCS /////////////////////////////////////////
 
@@ -242,9 +254,15 @@ vec3 fresnel_schlick_approx(float cos_th, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cos_th, 0.0, 1.0), 5.0);
 }
 
+float fresnel_schlick_approx(float cos_th, float F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cos_th, 0.0, 1.0), 5.0);
+}
+
 // Based on learnopengl tutorials for the cook-torrance shading model
 // concretely, the pbr chapter adapted to my spectral pipeline
-float pbr_material_shading(vec3 world_pos, float albedo)
+/// INFO: Spectral version
+float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
 {
     // Decode values from the framebuffer textures
     vec4 _metallic_tex_sample = texture(framebuffer_tex2, fTexcoords).rgba;
@@ -261,23 +279,151 @@ float pbr_material_shading(vec3 world_pos, float albedo)
     // reflectance equation
     float Lo = 0.0;
 
+    // Get light radiance (depends on type, either point or dir light)
     for(int i = 0; i < num_lights; i++)
     {
-        // per-light radiance
-        vec3 L = normalize(light_positions[i] - world_pos);
-        vec3 H = normalize(V + L);  // halfway vector
-
-        float dist = length(light_positions[i] - world_pos);
-        /// TODO: Define light attenuation for lights, also
-        //      I should specify how to put lights here !!!
+        vec3 L = vec3(0,0,0);           // assign values later
+        vec3 H = vec3(0,0,0);           // assign values later
         float att = 1.0;
+
+        Light l = scene_lights[i];
+        if(l.position.w == 0)   // dir light
+        {
+            L = normalize(-l.direction);
+            H = normalize(V + L);
+            // att = 1.0;
+        }
+        else    // point light
+        {
+            L = normalize(l.position - world_pos);
+            H = normalize(V + L);  // halfway vector
+            float distance = length(l.position - world_pos);
+            att = 1.0 / (distance * distance);
+        }
+        // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
+        float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
+        float radiance = texture(l.emission_spec, _l_emission_coord) * l.emission_mult * att;
+
+        // Cook-Torrance BRDF
+        float NDF = ggx_dist(N, H, roughness);
+        float G = geom_smith(N, V, L, roughness);
+        float F = fresnel_schlick_approx(max(dot(H, V), 0.0), F0);
         
+        float num = NDF * G * F;
+        float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+        float specular = num / max(denom, 0.0001);  // prevent a division by 0
+        
+        float kS = F;
+        // energy conservation, diff and spec can't be above 1.0
+        float kD = 1.0 - kS;
+        kD *= 1.0 - metallic;
+        float n_dot_l = max(dot(N, L), 0.0);
+
+        // Add to outgoing radiance Lo (we already multiplied by fresnel)
+        Lo += (kD * albedo / PI + specular) * radiance * n_dot_l;
     }
+
+    // TODO: IBL or Ambient Occlusion
+    float ambient = 0.03 * albedo;
+    float color = ambient + Lo;
+    return color;
+}
+
+/// INFO: RGB Version
+vec3 pbr_material_shading(vec3 world_pos)
+{
+    
+    // Decode values from the framebuffer textures
+    vec4 _metallic_tex_sample = texture(framebuffer_tex2, fTexcoords).rgba;
+    vec4 _albedo_tex_sample = texture(framebuffer_tex3, fTexcoords).rgba;
+
+    vec3 albedo =       _albedo_tex_sample.rgb;
+    float roughness =   _albedo_tex_sample.a;
+    float metallic =    _metallic_tex_sample.a;
+    vec3 N =            _metallic_tex_sample.rgb;
+
+    vec3 V = normalize(cam_pos - world_pos);
+
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, metallic);
+
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+
+    // Get light radiance (depends on type, either point or dir light)
+    for(int i = 0; i < num_lights; i++)
+    {
+        vec3 L = vec3(0,0,0);           // assign values later
+        vec3 H = vec3(0,0,0);           // assign values later
+        float att = 1.0;
+
+        Light l = scene_lights[i];
+        if(l.position.w == 0)   // dir light
+        {
+            L = normalize(-l.direction);
+            H = normalize(V + L);
+            // att = 1.0;
+        }
+        else    // point light
+        {
+            L = normalize(l.position - world_pos);
+            H = normalize(V + L);  // halfway vector
+            float distance = length(l.position - world_pos);
+            att = 1.0 / (distance * distance);
+        }
+        // per-light radiance
+        vec3 radiance = l.emission_rgb * l.emission_mult * att;
+
+        // Cook-Torrance BRDF
+        float NDF = ggx_dist(N, H, roughness);
+        float G = geom_smith(N, V, L, roughness);
+        vec3 F = fresnel_schlick_approx(max(dot(H, V), 0.0), F0);
+        
+        vec3 num = NDF * G * F;
+        float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+        vec3 specular = num / max(denom, 0.0001);  // prevent a division by 0
+        
+        vec3 kS = F;
+        // energy conservation, diff and spec can't be above 1.0
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;
+        float n_dot_l = max(dot(N, L), 0.0);
+
+        // Add to outgoing radiance Lo (we already multiplied by fresnel)
+        Lo += (kD * albedo / PI + specular) * radiance * n_dot_l;
+    }
+
+    // TODO: IBL or Ambient Occlusion
+    vec3 ambient = vec3(0.03) * albedo; // * ao (haven't done it yet)
+    vec3 color = ambient + Lo;
+    return color;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float material_lighting(int mat_id, vec3 world_pos, float albedo_response)
+
+// Spectral version
+float material_lighting(int mat_id, vec3 world_pos, float wavelength, float albedo_response)
+{
+    // I have to put all the material IDs in a single file, 
+    //      even id it's just for reference and readability
+
+    if(mat_id == 0) // debgug material
+    {
+        return 0.0f;
+    }
+    if(mat_id == 1) // pbr
+    {
+        return pbr_material_shading(world_pos, wavelength, albedo_response);
+    }
+    // else (material id not known, return black)
+    return 0.0f;
+}
+
+// RGB version
+vec3 material_lighting(int mat_id, vec3 world_pos)
 {
     // I have to put all the material IDs in a single file, 
     //      even id it's just for reference and readability
@@ -288,9 +434,9 @@ float material_lighting(int mat_id, vec3 world_pos, float albedo_response)
     }
     if(mat_id == 1) // pbr
     {
-        return pbr_material_shading(world_pos, albedo_response);
+        return pbr_material_shading(world_pos);
     }
-    // else (material id not known)
+    // else (material id not known, return black)
     return vec3(0.0, 0.0, 0.0);
 }
 
@@ -298,7 +444,12 @@ float material_lighting(int mat_id, vec3 world_pos, float albedo_response)
 
 void main()
 {
-    fb_1_read = texture(framebuffer_tex1, fTexcoords);
+    if(num_lights > MAX_NUM_LIGHTS)
+    {
+        num_lights = MAX_NUM_LIGHTS;
+    }
+
+    vec4 fb_1_read = texture(framebuffer_tex1, fTexcoords).rgba;
     vec3 world_pos = fb_1_read.rgb;
     int mat_id = int(fb_1_read.a);
 
@@ -306,6 +457,8 @@ void main()
     {
         // For all the chosen wavelengths
         vec4 final_xyz_color = vec4(0.0, 0.0, 0.0, 0.0);
+        // If we fetch the albedo tex here we save #wls-1 texture reads,
+        //      at the cost of 1 extra param for every function that follows
         vec3 albedo_tex_rgb = texture(framebuffer_tex3, fTexcoords).rgb;   // Fetch original rgb color from tex
         for (int i = 0; i < n_wls; i++)
         {
@@ -314,33 +467,34 @@ void main()
             // Perform the uplifting step for our rgb color:
             float albedo_spectral_response = jakob_hanika_uplifting(albedo_tex_rgb, wavelength);
 
+            // Actual material calculations for lighting
+            float Lo = material_lighting(mat_id, world_pos, wavelength, albedo_spectral_response);
 
-            float Lo = material_lighting(mat_id, world_pos, albedo_spectral_response);
-
-
-
-
-            // And the sensor response (tristimulus, can be XYZ or RGB)
+            // Sensor response (tristimulus, can be XYZ or RGB)
             float wl_range = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
             vec3 response_for_wl = texture(resp_curve, wl_range).rgb;
             if(!convert_xyz_to_rgb)
             {
                 response_for_wl = RGB_to_XYZ(response_for_wl.rgb);
             }
-
-            // Cumulative sum for Riemann integration
-            color_spectral += vec4(_S * response_for_wl, response_for_wl.g);
+            // Cumulative sum of responses for Riemann integration
+            final_xyz_color += vec4(vec3(Lo * response_for_wl), response_for_wl.g);
         }
-
         // Riemann sum final step: Divide by number and size of steps
-        color_spectral = (( float(wl_max - wl_min) / float(n_wls) ) * color_spectral);
-
-        vec3 aux = XYZ_to_RGB(color_spectral.rgb / color_spectral.a);   // XYZ luminance Y normalization to 100
-        out_color = vec4(aux, 1.0);
+        final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * color_spectral);
+        
+        // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
+        vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100
+        out_color = vec4(out_rgb, 1.0);
     }
     else
     {
         // Simply return the rgb texture colors as normal
-        out_color = vec4(texture(framebuffer_tex3, fTexcoords).rgb, 1.0);
+        // out_color = vec4(texture(framebuffer_tex3, fTexcoords).rgb, 1.0);
+
+        /// Render in RGB instead of spectrally
+        // world_pos, mat_id are known 
+        vec3 Lo = material_lighting(mat_id, world_pos);    
+        out_color = vec4(Lo, 1.0);
     }
 }

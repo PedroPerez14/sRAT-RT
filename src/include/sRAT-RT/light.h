@@ -10,8 +10,8 @@ class Light : public Object
 public:
 
     virtual Spectrum* get_spectrum() = 0;
-
     virtual void set_spectrum(Spectrum* spec) = 0;
+    virtual float get_power_multiplier() = 0;
 
 protected:
     Spectrum* emission_spectrum;

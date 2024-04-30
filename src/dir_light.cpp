@@ -26,3 +26,13 @@ void DirLight::set_spectrum(Spectrum* spec)
 {
     emission_spectrum = spec;
 }
+
+float DirLight::get_power_multiplier()
+{
+    return power_multiplier;
+}
+
+void DirLight::set_power_multiplier(float pm)
+{
+    power_multiplier = pm;
+}

@@ -5,3 +5,5 @@ resources/objects/*
 .vscode/
 .vscode/*
 resources/response_curves/
+resources/pbr_materials/
+resources/pbr_materials/*

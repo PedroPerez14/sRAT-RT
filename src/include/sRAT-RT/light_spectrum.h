@@ -18,7 +18,7 @@ public:
     float get_wl_min() const;
     float get_wl_max() const;
     int get_n_samples() const;
-    unsigned int get_emission_tex_id() const;
+    //sunsigned int get_emission_tex_id() const;
     glm::vec3 get_responses_rgb() const;
     std::vector<light_response_sample>* get_responses() const;
     
@@ -29,9 +29,9 @@ private:
     float min_wl;
     float max_wl;
     int n_samples;
-    unsigned int emission_tex_id;
+    //unsigned int emission_tex_id;
 
-    void gen_emission_tex_1d();
+    //void gen_emission_tex_1d();
 };
 
 #endif

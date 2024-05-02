@@ -4,14 +4,16 @@
 RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
                     std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version)
 {
-    m_deferred_lighting_pass_shader = new Shader();
-    m_postprocess_pass_shader = new Shader();       // or nullptr if we want to ignore this pass, it's optional
+    m_deferred_lighting_pass_shader = new Shader("../src/shaders/pbr_spectral/vertex_deferred_lighting.glsl", "../src/shaders/pbr_spectral/fragment_deferred_lighting.glsl");
+    m_postprocess_pass_shader = new Shader("../src/shaders/pbr_spectral/vertex_postprocess.glsl", "../src/shaders/pbr_spectral/fragment_postprocess.glsl");
     m_app_version = version;
     working_colorspace = settings->get_colorspace();                        // Just use sRGB
     m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();  // check tex number for your machine
+    m_pprocess_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();                    // Only for the postprocessing pass
     unsigned int _width = settings->get_window_width();
-    unsigned int _height = settings->get_window_width();
+    unsigned int _height = settings->get_window_height();
     m_deferred_framebuffer->init(_width, _height);
+    m_pprocess_framebuffer->init(_width, _height);
     lut_textures_create(look_up_tables);            // Convert the LUTs from data to 3D textures
     m_response_curves_render = response_curves;
     m_selected_resp_curve = 0;                      // Would be much better if the def. curve was the CIE one
@@ -44,30 +46,34 @@ void RendererPBR::render_scene(Scene* scene)
         m_resize_flag = false;
     }
 
-    glClearColor(0.0, 0.0, 0.0, 1.0);
+    GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
     // Clear default framebuffer (the screen)
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     // Clear the framebuffer from the last frame
     m_deferred_framebuffer->bind();
     m_deferred_framebuffer->clear();
     
     // First rendering pass, the Deferred Geometry Pass: Fill the GBuffer with data
     deferred_geometry_pass(scene);      // Render into the framebuffer
+    
+    m_deferred_framebuffer->unbind();
+    m_pprocess_framebuffer->bind();
+    m_pprocess_framebuffer->clear();
 
     // Second pass, Deferred Shading: Use a giant shader to light all the scene at once
-    deferred_lighting_pass(scene);      // Draw the scene at once (in the framebuffer)
+    deferred_lighting_pass(scene);          // Draw the scene at once to the postprocessing buffer
 
     /// TODO: DO I NEED TO BLIT THE FRAMEBUFFER IF I'M DOING EVERYTHING INSIDE THE SAME FRAMEBUFFER??
-    //blit_depth_buffer();              // In case we need a final forward pass
+    //blit_depth_buffer();                  // In case we need a final forward pass
 
     // Third pass, optional: Forward rendering for some objects that may need it (i.e area lights)
-    forward_pass(scene);                // Also draws to gbuffer (should be a 2nd FBO) [EMPTY FOR NOW]
+    //forward_pass(scene);                  // Also draws to gbuffer (should be a 2nd FBO) [EMPTY FOR NOW]
 
-    m_deferred_framebuffer->unbind();   // The next pass will render directly into the screen buffer  
+    m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer  
 
     // Fourth pass, optional: Post processing, visual effects, tonemapping and gamma correction
-    post_processing_pass(scene);        // Takes the screen buffer as input
+    post_processing_pass(scene);            // Takes the postprocessing buffer as input
 }
 
 void RendererPBR::render_ui()
@@ -78,6 +84,7 @@ void RendererPBR::render_ui()
 void RendererPBR::handle_resize(int w, int h)
 {
     m_deferred_framebuffer->resize(w, h);
+    m_pprocess_framebuffer->resize(w, h);
     m_resize_flag = true;
 }
 
@@ -153,12 +160,12 @@ void RendererPBR::lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>*
 void RendererPBR::reload_shaders()
 {
     
-    std::vector<RenderableObject> _ros_scene = m_last_rendered_scene->get_renderables();
+    std::vector<RenderableObject*> _ros_scene = m_last_rendered_scene->get_renderables();
     int num_renderables = _ros_scene.size();
     int num_reloaded = 0;
-    for (RenderableObject& ro : _ros_scene)
+    for (RenderableObject* ro : _ros_scene)
     {
-        if(ro.get_material()->reload_shader())
+        if(ro->get_material()->reload_shader())
             num_reloaded++;
     }
 
@@ -280,24 +287,25 @@ void RendererPBR::deferred_geometry_pass(Scene* scene)
     Camera* camera = scene->get_camera();
     // for every renderable in the scene, if it has to be rendered in this pass,
     //  then set its uniforms correctly and render it (put it in the gbuffer)
-    std::vector<RenderableObject> renderables = scene->get_renderables();
-    for(RenderableObject& ro : renderables)
+    std::vector<RenderableObject*> renderables = scene->get_renderables();
+    for(RenderableObject* ro : renderables)
     {
-        Material* mat = ro.get_material();
+        Material* mat = ro->get_material();
         if(mat->get_pass() == DEFERRED_GEOMETRY)
         {
             // set uniforms (incl. Model, View, Projection matrices)
             // call its draw() method
-            glm::mat4 model = ro.get_transform().get_model();
-            glm::mat4 view = camera->get_view_matrix();               // from learnOpenGL, I _should_ redo the camera with Transforms
-            glm::mat4 projection = camera->get_projection_matrix(); // needs testing for different resolutions (cam's w and h)
-            ro.draw(mat->get_shader(), model, view, projection);    // The shader will fill the gbuffer accordingly
+            glm::mat4 model = ro->get_transform()->get_model();
+            glm::mat4 view = camera->get_view_matrix();                 // from learnOpenGL, I _should_ redo the camera with Transforms
+            glm::mat4 projection = camera->get_projection_matrix();     // needs testing for different resolutions (cam's w and h)
+            ro->draw(mat->get_shader(), model, view, projection);       // The shader will fill the gbuffer accordingly
         }
     }
 }
 
 void RendererPBR::deferred_lighting_pass(Scene* scene)
 {
+    //std::cout << "DEFERRED LIGHTING PASS !" << std::endl;
     /// INFO: Bindings for the deferred lighting shader:
     //
     // The LUTs will get the first 3 bindings, 0, 1 and 2.
@@ -309,6 +317,7 @@ void RendererPBR::deferred_lighting_pass(Scene* scene)
     // Normals (w/ Metallic coeff on its .a component only for PBRMat) --> 7th, 6
     // Albedo (w/ Roughness coeff on its .a component only for PBRMat) --> 8th, 7
     // Any material specific textures will follow from the 9th (8) place onwards
+    m_deferred_lighting_pass_shader->use();
     unsigned int lut_3d_ids[3];
     memcpy(lut_3d_ids, m_lut_textures->at(get_colorspace()).tex_ids, 3 * sizeof(unsigned int));
     for(int i = 0; i < 3; i++)
@@ -339,7 +348,6 @@ void RendererPBR::deferred_lighting_pass(Scene* scene)
     }
     
     /// Now, set the uniforms:
-    m_deferred_lighting_pass_shader->use();
     set_deferred_lighting_shader_uniforms(scene);
 
     // Finally, render the fullscreen quad
@@ -352,16 +360,16 @@ void RendererPBR::forward_pass(Scene* scene)
 {
     Camera* camera = scene->get_camera();
     // Draw directly to screen (after blit-ing the framebuffer)
-    std::vector<RenderableObject> renderables = scene->get_renderables();
-    for(RenderableObject& ro : renderables)
+    std::vector<RenderableObject*> renderables = scene->get_renderables();
+    for(RenderableObject* ro : renderables)
     {
-        Material* mat = ro.get_material();
+        Material* mat = ro->get_material();
         if(mat->get_pass() == FORWARD_PASS)
         {
-            glm::mat4 model = ro.get_transform().get_model();
+            glm::mat4 model = ro->get_transform()->get_model();
             glm::mat4 view = camera->get_view_matrix();
             glm::mat4 projection = camera->get_projection_matrix();
-            ro.draw(mat->get_shader(), model, view, projection);
+            ro->draw(mat->get_shader(), model, view, projection);
         }
     }
 }
@@ -373,20 +381,23 @@ void RendererPBR::post_processing_pass(Scene* scene)
     //  after doing the postprocessing (tonemapping, etc.)
 
     m_postprocess_pass_shader->use();               // Use the shader
-    /// TODO: Set any relevant uniforms here
+    m_postprocess_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
 
     GL_CHECK(glActiveTexture(GL_TEXTURE0));         // Bind the texture
-    glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(0));
+    glBindTexture(GL_TEXTURE_2D, m_pprocess_framebuffer->getTextureID(0));
 
     render_quad();                                  // Render (to screen)
 }
 
+
+/// TODO: Not default framebuffer, but the postprocessing framebuffer!
 void RendererPBR::blit_depth_buffer()
 {
     m_deferred_framebuffer->bindForReading();
     unsigned int _w = m_deferred_framebuffer->getWidth();
     unsigned int _h = m_deferred_framebuffer->getHeight();
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+    //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+    m_pprocess_framebuffer->bind();
     glBlitFramebuffer(
     0, 0, _w, _h, 0, 0, _w, _h, GL_DEPTH_BUFFER_BIT, GL_NEAREST
     );
@@ -395,6 +406,7 @@ void RendererPBR::blit_depth_buffer()
 
 void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
 {
+    m_deferred_lighting_pass_shader->use();
     ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
     m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
     m_deferred_lighting_pass_shader->setBool("convert_xyz_to_rgb", m_is_response_in_xyz);
@@ -408,16 +420,16 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     m_deferred_lighting_pass_shader->setVec3("cam_pos", scene->get_camera()->Position);
 
     // now, set the lights in the scene
-    std::vector<Light> scene_lights = scene->get_lights();
+    std::vector<Light*> scene_lights = scene->get_lights();
     int i = 0;
-    for(Light& light : scene_lights)
+    for(Light* light : scene_lights)
     {
         // Don't look at this code, it's embarrasing 
         // (I should consider 2 separate vectors, one for dir lights and another for point lights)
-        if(light.get_light_type() == DIR_LIGHT)
+        if(light->get_light_type() == DIR_LIGHT)
         {
-            DirLight* dl = dynamic_cast<DirLight*>(&light);
-            m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(dl->get_transform().get_pos(), 0));
+            DirLight* dl = dynamic_cast<DirLight*>(light);
+            m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(dl->get_transform()->get_pos(), 0));
             m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].direction", dl->get_dir());
             m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", glm::vec3(0.0f, 0.0f, 0.0f));
             m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].emission_rgb", dl->get_spectrum()->get_responses_rgb());

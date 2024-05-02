@@ -1,6 +1,6 @@
 #version 450 core
 
-#define MAX_NUM_LIGHTS 256                                  // let's not put so many lights in a scene pls
+#define MAX_NUM_LIGHTS 16                                   // let's not put too many lights or the shader will cry
 
 in vec2 fTexcoords;
 
@@ -20,14 +20,14 @@ layout (binding = 3) uniform sampler1D tex_wavelengths;
 layout (binding = 4) uniform sampler1D resp_curve;
 layout (binding = 5) uniform sampler1DArray l_em_spec;      // array of 1D textures containing the spectral emission of every light in the scene
 /////////////////////////////////// FRAMEBUFFER BEGINS HERE ///////////////////////////////////
-layout (binding = 6) uniform sampler1D framebuffer_tex1;    // pos +  mat_id
-layout (binding = 7) uniform sampler1D framebuffer_tex2;    // normal + ??? (1 float free for materials to use)
-layout (binding = 8) uniform sampler1D framebuffer_tex3;    // albedo + ??? (1 float free for materials to use)
-layout (binding = 9) uniform sampler1D framebuffer_tex4;    // free for materials to use
-layout (binding = 10) uniform sampler1D framebuffer_tex5;   // free for materials to use
-layout (binding = 11) uniform sampler1D framebuffer_tex6;   // free for materials to use
-layout (binding = 12) uniform sampler1D framebuffer_tex7;   // free for materials to use
-layout (binding = 13) uniform sampler1D framebuffer_tex8;   // free for materials to use
+layout (binding = 6)  uniform sampler2D framebuffer_tex1;   // pos +  mat_id
+layout (binding = 7)  uniform sampler2D framebuffer_tex2;   // normal + ??? (1 float free for materials to use)
+layout (binding = 8)  uniform sampler2D framebuffer_tex3;   // albedo + ??? (1 float free for materials to use)
+layout (binding = 9)  uniform sampler2D framebuffer_tex4;   // free for materials to use
+layout (binding = 10) uniform sampler2D framebuffer_tex5;   // free for materials to use
+layout (binding = 11) uniform sampler2D framebuffer_tex6;   // free for materials to use
+layout (binding = 12) uniform sampler2D framebuffer_tex7;   // free for materials to use
+layout (binding = 13) uniform sampler2D framebuffer_tex8;   // free for materials to use
 
 struct Light                                                // Emission spectrum has to be in a separate texture array :/
 {
@@ -67,6 +67,10 @@ const mat3 RGB_TO_XYZ_M = mat3(
 );
 
 const float PI = 3.14159265359;                             // pi
+
+////////////////////////////////////// GLOBAL VARS //////////////////////////////////////
+
+int n_lights = 0;
 
 ///////////////////////////////////////// FUNCS /////////////////////////////////////////
 
@@ -197,7 +201,7 @@ vec3 fetch_uplifting_lut(vec3 rgb)
     return coeffs;
 }
 
-vec3 jakob_hanika_uplifting(vec3 albedo_tex_rgb, float wavelength)
+float jakob_hanika_uplifting(vec3 albedo_tex_rgb, float wavelength)
 {
     // Fetch the coefficients from the 3D LUT with the rgb color
     vec3 coeffs = fetch_uplifting_lut(albedo_tex_rgb);
@@ -246,8 +250,8 @@ float geom_smith(vec3 N, vec3 V, vec3 L, float roughness)
 {
     float n_dot_v = max(dot(N, V), 0.0);
     float n_dot_l = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(n_dot_v, roughness);
-    float ggx1 = GeometrySchlickGGX(n_dot_l, roughness);
+    float ggx2 = geom_schlick_ggx_dist(n_dot_v, roughness);
+    float ggx1 = geom_schlick_ggx_dist(n_dot_l, roughness);
 
     return ggx1 * ggx2;
 }
@@ -283,7 +287,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
     float Lo = 0.0;
 
     // Get light radiance (depends on type, either point or dir light)
-    for(int i = 0; i < num_lights; i++)
+    for(int i = 0; i < n_lights; i++)
     {
         vec3 L = vec3(0,0,0);           // assign values later
         vec3 H = vec3(0,0,0);           // assign values later
@@ -298,14 +302,14 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
         }
         else    // point light
         {
-            L = normalize(l.position - world_pos);
+            L = normalize(l.position.xyz - world_pos);
             H = normalize(V + L);  // halfway vector
-            float distance = length(l.position - world_pos);
+            float distance = length(l.position.xyz - world_pos);
             att = 1.0 / (distance * distance);
         }
         // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
         float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
-        float radiance = texture(l_em_spec[i], _l_emission_coord) * l.emission_mult * att;
+        float radiance = texture(l_em_spec, vec2(_l_emission_coord, float(i))).r * l.emission_mult * att;
 
         // Cook-Torrance BRDF
         float NDF = ggx_dist(N, H, roughness);
@@ -356,7 +360,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     vec3 Lo = vec3(0.0);
 
     // Get light radiance (depends on type, either point or dir light)
-    for(int i = 0; i < num_lights; i++)
+    for(int i = 0; i < n_lights; i++)
     {
         vec3 L = vec3(0,0,0);           // assign values later
         vec3 H = vec3(0,0,0);           // assign values later
@@ -371,9 +375,9 @@ vec3 pbr_material_shading(vec3 world_pos)
         }
         else    // point light
         {
-            L = normalize(l.position - world_pos);
+            L = normalize(l.position.xyz - world_pos);
             H = normalize(V + L);  // halfway vector
-            float distance = length(l.position - world_pos);
+            float distance = length(l.position.xyz - world_pos);
             att = 1.0 / (distance * distance);
         }
         // per-light radiance
@@ -444,12 +448,12 @@ vec3 material_lighting(int mat_id, vec3 world_pos)
 }
 
 ///////////////////////////////////////// MAIN /////////////////////////////////////////
-
 void main()
 {
+    n_lights = num_lights;
     if(num_lights > MAX_NUM_LIGHTS)
     {
-        num_lights = MAX_NUM_LIGHTS;
+        n_lights = MAX_NUM_LIGHTS;
     }
 
     vec4 fb_1_read = texture(framebuffer_tex1, fTexcoords).rgba;
@@ -484,16 +488,17 @@ void main()
             final_xyz_color += vec4(vec3(Lo * response_for_wl), response_for_wl.g);
         }
         // Riemann sum final step: Divide by number and size of steps
-        final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * color_spectral);
+        final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * final_xyz_color);
         
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
         vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100
         out_color = vec4(out_rgb, 1.0);
+        debug_1 = vec4(1,2,3,4);
     }
     else
     {
         // Simply return the rgb texture colors as normal
-        // out_color = vec4(texture(framebuffer_tex3, fTexcoords).rgb, 1.0);
+        //out_color = vec4(texture(framebuffer_tex3, fTexcoords).rgb, 1.0);
 
         /// Render in RGB instead of spectrally
         // world_pos, mat_id are known 

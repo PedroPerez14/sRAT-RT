@@ -38,6 +38,7 @@ private:
     Shader* m_postprocess_pass_shader;          // if null there is no postprocess (do gamma correction here??)
     colorspace working_colorspace;
     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_deferred_framebuffer;
+    GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* m_pprocess_framebuffer;
     std::unordered_map<colorspace, lut_as_tex3d>* m_lut_textures;
     std::unordered_map<std::string, ResponseCurve*>* m_response_curves_render;
     std::vector<std::string> m_response_curve_names;

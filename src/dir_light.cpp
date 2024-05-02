@@ -2,6 +2,7 @@
 
 DirLight::DirLight(glm::vec3 _dir, Spectrum* _spectrum, float _power_multiplier = 1.0f)
 {
+    transform = new Transform();
     emission_spectrum = _spectrum;
     power_multiplier = _power_multiplier;
     dir = _dir;

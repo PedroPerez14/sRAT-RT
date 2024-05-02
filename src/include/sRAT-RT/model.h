@@ -26,9 +26,11 @@ public:
 
     Model();
 
-    Model(char* path)
+    Model(char* path, Material* mat)
     {
+        transform = new Transform();
         load_model(path);
+        set_material(mat);
     }
     
     void draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 projection);

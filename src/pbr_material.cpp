@@ -1,5 +1,6 @@
 #include <sRAT-RT/pbr_material.h>
 #include <sRAT-RT/stb_image.h>
+#include <sRAT-RT/gl_check.h>
 
 unsigned int texture_from_file(const std::string& full_path)
 {
@@ -17,15 +18,15 @@ unsigned int texture_from_file(const std::string& full_path)
             format = GL_RGB;
         else if (nrComponents == 4)
             format = GL_RGBA;
+        
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID));
+        GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data));
+        GL_CHECK(glGenerateMipmap(GL_TEXTURE_2D));
 
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
+        GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+        GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
+        GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
     }
     else
@@ -49,24 +50,34 @@ PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load,
     mat_id = 1;         // Hardcoded (I'll do some table in a .h file, in the future this _should_ be different)
 }
 
+PBRMaterial::~PBRMaterial()
+{
+
+}
 
 /// WARNING: WE OPERATE UNDER THE ASSUMPTION THAT THE TEXTURES ARE DECLARED IN THE SAME ORDER AS THEIR BINDINGS (BE CAREFUL)
 void PBRMaterial::set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
+    mat_shader->use();
     glm::mat3 normal_mat = glm::mat3(glm::transpose(glm::inverse(model)));
     mat_shader->setMat4("model", model);
     mat_shader->setMat4("view", view);
     mat_shader->setMat4("projection", projection);
-    mat_shader->setMat4("normal_mat", normal_mat);  // don't compute this in the vertex shader please
+    mat_shader->setMat3("normal_mat", normal_mat);  // don't compute this in the vertex shader please
     mat_shader->setInt("mat_id", mat_id);
 
     // For this type of PBR shader we assume that every uniform is a texture
     for(unsigned int i = 0; i < mat_textures.size(); i++)
     {
         Texture _tex = mat_textures[i];
-        glActiveTexture(GL_TEXTURE0 + _tex.binding);
-        glBindTexture(GL_TEXTURE_2D, _tex.id);
-        mat_shader->setInt((const std::string)(_tex.type), _tex.binding);   // Might explode here
+        // std::cout << " AAAAAA " << i << " / " << mat_textures.size() 
+        // << "\ntex.id: " << _tex.id << "\ntex.binding: " << _tex.binding
+        // << "\ntex.type: " << _tex.type << "\ntex.path: " << _tex.path << std::endl;
+        unsigned int binding = _tex.binding;
+        unsigned int id = _tex.id;
+        glActiveTexture(GL_TEXTURE0 + binding);
+        // mat_shader->setFloat((const std::string)(_tex.type), (float)_tex.binding);   // Might explode here
+        glBindTexture(GL_TEXTURE_2D, id);
     }
 }
 
@@ -91,6 +102,8 @@ bool PBRMaterial::reload_shader()
     return reload_ok;
 }
 
+/// NOTE: The idea here is to pass an array of incomplete Texture structs
+/// and the method completes them, along with the actual texture loading (I should change this)
 void PBRMaterial::load_textures(const std::vector<Texture>& textures_to_load)
 {
     for(unsigned int i = 0; i < textures_to_load.size(); i++)
@@ -103,7 +116,7 @@ void PBRMaterial::load_textures(const std::vector<Texture>& textures_to_load)
             if(mat_textures[j].path == textures_to_load[i].path)
             {
                 mat_textures.push_back(mat_textures[j]);
-                skip == true;
+                skip = true;
                 break;
             }
         }

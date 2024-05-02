@@ -7,7 +7,7 @@ class Object
 {
 public:
 
-    Transform get_transform()
+    Transform* get_transform()
     {
         return transform;
     }
@@ -15,7 +15,7 @@ public:
     /// TODO: Add stuff here if needed
 
 protected:
-    Transform transform;
+    Transform* transform;
 };
 
 #endif

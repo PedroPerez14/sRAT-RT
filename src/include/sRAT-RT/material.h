@@ -19,7 +19,6 @@ public:
     virtual bool reload_shader() = 0;           // Return false if the shaders could not be reloaded, i.e a compilation or linking error happened
     virtual void set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection) = 0;
     virtual Shader* get_shader() = 0;           // Returns the current shader in case we need to use() it
-    virtual ~Material() = 0;                    // Pure virtual
 
     RenderPasses get_pass() { return render_pass; }
 

@@ -27,7 +27,7 @@ void Model::draw(Shader* shader, glm::mat4 model, glm::mat4 view, glm::mat4 proj
         meshes.at(i).draw(shader);
     }
     // Good practice to set everything back to default
-    GL_CHECK(glActiveTexture(GL_TEXTURE0));   // I think I can delete this tbh
+    //GL_CHECK(glActiveTexture(GL_TEXTURE0));   // I think I can delete this tbh
 }
 
 bool Model::load_model(const std::string& path)

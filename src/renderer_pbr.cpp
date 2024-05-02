@@ -20,6 +20,7 @@ RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2
     populate_resp_curves_list();                    // For UI purposes
     m_resample_wls = true;
     m_is_response_in_xyz = false;
+    m_do_spectral = false;
     m_num_wavelengths = settings->get_num_wavelengths();
     m_wl_min = settings->get_wl_min();
     m_wl_max = settings->get_wl_max();
@@ -31,7 +32,17 @@ RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2
 }
 
 void RendererPBR::render_scene(Scene* scene)
-{
+{   
+    // std::cout << "---------------------------------------------------------" << std::endl;
+    // std::cout << "CAMERA POSITION: " << scene->get_camera()->Position.x << ", "
+    // << scene->get_camera()->Position.y << ", " << scene->get_camera()->Position.z << std::endl;
+    // glm::vec3 _t = scene->get_renderables().at(0)->get_transform()->get_pos();
+
+    // std::cout << "CAMERA ROTATION: YAW: " << scene->get_camera()->Yaw 
+    //         << ", PITCH: " << scene->get_camera()->Pitch << std::endl;
+
+    // std::cout << "SCENE ITEM POS: " << _t.x << ", " << _t.y << ", " << _t.z << std::endl;
+
     // Update the reference to the last rendered scene
     m_last_rendered_scene = scene;
     if(m_resample_wls)
@@ -48,32 +59,32 @@ void RendererPBR::render_scene(Scene* scene)
 
     GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
     // Clear default framebuffer (the screen)
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    // Clear the framebuffer from the last frame
+    // Clear the framebuffers from the last frame
+    m_pprocess_framebuffer->bind();
+    m_pprocess_framebuffer->clear();
     m_deferred_framebuffer->bind();
     m_deferred_framebuffer->clear();
+    
     
     // First rendering pass, the Deferred Geometry Pass: Fill the GBuffer with data
     deferred_geometry_pass(scene);      // Render into the framebuffer
     
     m_deferred_framebuffer->unbind();
-    m_pprocess_framebuffer->bind();
-    m_pprocess_framebuffer->clear();
+    //m_pprocess_framebuffer->bind();
 
     // Second pass, Deferred Shading: Use a giant shader to light all the scene at once
     deferred_lighting_pass(scene);          // Draw the scene at once to the postprocessing buffer
 
-    /// TODO: DO I NEED TO BLIT THE FRAMEBUFFER IF I'M DOING EVERYTHING INSIDE THE SAME FRAMEBUFFER??
-    //blit_depth_buffer();                  // In case we need a final forward pass
+    //blit_depth_buffer(m_deferred_framebuffer, nullptr); // if nullptr in dest, it's the default FB
 
     // Third pass, optional: Forward rendering for some objects that may need it (i.e area lights)
     //forward_pass(scene);                  // Also draws to gbuffer (should be a 2nd FBO) [EMPTY FOR NOW]
 
-    m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer  
+    //m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer  
 
     // Fourth pass, optional: Post processing, visual effects, tonemapping and gamma correction
-    post_processing_pass(scene);            // Takes the postprocessing buffer as input
+    //post_processing_pass(scene);            // Takes the postprocessing buffer as input
 }
 
 void RendererPBR::render_ui()
@@ -327,7 +338,7 @@ void RendererPBR::deferred_lighting_pass(Scene* scene)
         GL_CHECK(glBindTexture(GL_TEXTURE_3D, lut_3d_ids[i]));
     }
 
-    //Sampled wavelengths, 3
+    // Sampled wavelengths, 3
     GL_CHECK(glActiveTexture(GL_TEXTURE3));
     GL_CHECK(glBindTexture(GL_TEXTURE_1D, m_sampled_wls_tex_id));
 
@@ -383,7 +394,7 @@ void RendererPBR::post_processing_pass(Scene* scene)
     m_postprocess_pass_shader->use();               // Use the shader
     m_postprocess_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
 
-    GL_CHECK(glActiveTexture(GL_TEXTURE0));         // Bind the texture
+    glActiveTexture(GL_TEXTURE0);         // Bind the texture
     glBindTexture(GL_TEXTURE_2D, m_pprocess_framebuffer->getTextureID(0));
 
     render_quad();                                  // Render (to screen)
@@ -391,17 +402,24 @@ void RendererPBR::post_processing_pass(Scene* scene)
 
 
 /// TODO: Not default framebuffer, but the postprocessing framebuffer!
-void RendererPBR::blit_depth_buffer()
+void RendererPBR::blit_depth_buffer(GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* orig,
+                                     GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* dest)
 {
-    m_deferred_framebuffer->bindForReading();
-    unsigned int _w = m_deferred_framebuffer->getWidth();
-    unsigned int _h = m_deferred_framebuffer->getHeight();
+    unsigned int dest_id = dest->getID();
+    if(dest == nullptr)
+    {
+        dest_id = 0;
+    }
+    orig->bindForReading();
+    unsigned int _w = orig->getWidth();
+    unsigned int _h = orig->getHeight();
     //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-    m_pprocess_framebuffer->bind();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dest_id);
+    //m_pprocess_framebuffer->bind();
     glBlitFramebuffer(
     0, 0, _w, _h, 0, 0, _w, _h, GL_DEPTH_BUFFER_BIT, GL_NEAREST
     );
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);       
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);       
 }
 
 void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)

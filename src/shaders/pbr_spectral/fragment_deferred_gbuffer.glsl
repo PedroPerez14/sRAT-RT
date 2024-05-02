@@ -40,7 +40,7 @@ void main()
     vec3 map_normal = getNormalFromMap();
 
     // store the fragment position vector in the first gbuffer texture + mat_id
-    gPosition.rgba = vec4(FragPos, float(mat_id));
+    gPosition.rgba = vec4(FragPos, mat_id);
     // also store the per-fragment normals into the gbuffer + metallic
     gNormal.rgba = vec4(normalize(map_normal), metallic);
     // and the diffuse per-fragment color + roughness

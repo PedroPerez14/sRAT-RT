@@ -59,7 +59,7 @@ PBRMaterial::~PBRMaterial()
 void PBRMaterial::set_shader_uniforms(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 {
     mat_shader->use();
-    glm::mat3 normal_mat = glm::mat3(glm::transpose(glm::inverse(model)));
+    glm::mat3 normal_mat = glm::transpose(glm::inverse(glm::mat3(model)));
     mat_shader->setMat4("model", model);
     mat_shader->setMat4("view", view);
     mat_shader->setMat4("projection", projection);

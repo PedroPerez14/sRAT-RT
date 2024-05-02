@@ -78,7 +78,8 @@ private:
     void deferred_lighting_pass(Scene* scene);
     void forward_pass(Scene* scene);
     void post_processing_pass(Scene* scene);
-    void blit_depth_buffer();
+    void blit_depth_buffer(GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* orig, 
+                            GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* dest);
     void set_deferred_lighting_shader_uniforms(Scene* scene);
 };
 

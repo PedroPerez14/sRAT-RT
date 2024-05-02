@@ -27,9 +27,7 @@ const float ZOOM = 45.0f;
 const float WIDTH = 800.0f;
 const float HEIGHT = 600.0f;
 const float _NEAR = 0.1f;
-const float _FAR = 200.0f;
-
-
+const float _FAR = 100.0f;
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
 class Camera

@@ -437,7 +437,7 @@ vec3 material_lighting(int mat_id, vec3 world_pos)
 
     if(mat_id == 0) // debgug material
     {
-        return vec3(1.0, 0.0, 1.0);
+        return vec3(1.0, 0.0, 0.0);
     }
     if(mat_id == 1) // pbr
     {

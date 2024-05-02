@@ -4,7 +4,7 @@ in vec2 fTexcoords;
 
 out vec4 out_color;
 
-layout (binding = 0) uniform sampler2D tex;
+layout (binding = 0) uniform sampler2D tex_render;
 uniform bool do_spectral_uplifting;
 
 vec3 encode_sRGB(vec3 linear_RGB)
@@ -15,7 +15,6 @@ vec3 encode_sRGB(vec3 linear_RGB)
 
     return mix(a, b, c);
 }
-
 
 const float gamma = 2.2;
 const float exposure = 0.5;
@@ -44,11 +43,13 @@ vec3 exposureToneMapping(vec3 color)
 void main()
 {
     // L=0.2125R+0.7154G+0.0721B
-    vec3 col = texture(tex, fTexcoords).rgb;
-    //col = encode_sRGB(col);
+    vec3 col = texture(tex_render, fTexcoords).rgb;
+    col = encode_sRGB(col);
     out_color = vec4(col.rgb, 1.0);
     if(do_spectral_uplifting)
     {
         //out_color.rgb = reinhard(out_color.rgb);
     }
+    col = vec3(0,1,0);
+    out_color = vec4(col, 1);
 }

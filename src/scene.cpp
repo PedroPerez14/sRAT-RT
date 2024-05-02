@@ -8,10 +8,9 @@
 Scene::Scene()
 {
     /// Default scene?
-    // idk man im a bit tired today
     /// TODO: Define later a proper scene format,
     ///     once I'm more sure about how I'm going to implement all this.
-    camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    camera = new Camera(glm::vec3(0.0f, 0.0f, 2.0f));
     m_renderables.empty();
 }
 
@@ -29,7 +28,6 @@ Scene::Scene(const std::string& scene_file_path)
     //             "../src/shaders/vertex_deferred_gbuffer.glsl", "../src/shaders/fragment_deferred_gbuffer.glsl",
     //             "../src/shaders/vertex_forward.glsl", "../src/shaders/fragment_forward.glsl");
     bool wasd = hardcoded_scene_test();
-
     if(wasd)
     {
         std::cout << "Scene successfully loaded!" << std::endl;
@@ -181,7 +179,7 @@ bool Scene::hardcoded_scene_test()
 
     /// SCENE LIGHTS
     float light_mult = 1.0f;
-    glm::vec3 light_dir = glm::vec3(0.5f, 0.0f, -1.0f);
+    glm::vec3 light_dir = glm::vec3(0.5f, -0.25f, -1.0f);
     Spectrum* spectrum = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
     DirLight* dir_light = new DirLight(light_dir, spectrum, light_mult);
     m_scene_lights.push_back(dir_light);

@@ -34,6 +34,8 @@ RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2
     glGenTextures(1, &m_sampled_wls_tex_id);        // Create and populate 1D tex with chosen WLs
     gen_sampled_wls_tex1d();
     init_fullscreen_quad();                         // Finally, generate our full screen quad
+
+    m_illumination_multiplier = 1.0f;
 }
 
 void RendererPBR::render_scene(Scene* scene)
@@ -195,12 +197,20 @@ void RendererPBR::render_ui()
         ImGui::Checkbox("Is response XYZ?", &m_is_response_in_xyz);
     }
 
+    ImGui::SeparatorText(" Lights Config:");
+    if(ImGui::SliderFloat("power_mult_light", &m_illumination_multiplier, 0.0, 100.0))
+    {
+        m_last_rendered_scene->get_lights().at(0)->set_power_multiplier(m_illumination_multiplier);
+    }
+
     ImGui::SeparatorText(" OTHER CONFIGURATION: ");
     if(ImGui::Button("Reload All Shaders"))
     {
         reload_shaders();
     }
 
+
+    
     ImGui::SeparatorText(" IMGUI DEMO (DELETE LATER): ");
     if (ImGui::Button("Show/Hide ImGui demo"))
       showDemo = !showDemo;
@@ -214,6 +224,8 @@ void RendererPBR::render_ui()
 
 void RendererPBR::handle_resize(int w, int h)
 {
+    m_last_rendered_scene->get_camera()->cam_height = h;
+    m_last_rendered_scene->get_camera()->cam_width = w;
     m_deferred_framebuffer->resize(w, h);
     m_pprocess_framebuffer->resize(w, h);
     m_resize_flag = true;

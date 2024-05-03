@@ -344,7 +344,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     vec4 _metallic_tex_sample = texture(framebuffer_tex2, fTexcoords).rgba;
     vec4 _albedo_tex_sample = texture(framebuffer_tex3, fTexcoords).rgba;
 
-    vec3 albedo =       _albedo_tex_sample.rgb;
+    vec3 albedo =       pow(_albedo_tex_sample.rgb, vec3(2.2));
     float roughness =   _albedo_tex_sample.a;
     float metallic =    _metallic_tex_sample.a;
     vec3 N =            _metallic_tex_sample.rgb;
@@ -466,7 +466,7 @@ void main()
         vec4 final_xyz_color = vec4(0.0, 0.0, 0.0, 0.0);
         // If we fetch the albedo tex here we save #wls-1 texture reads,
         //      at the cost of 1 extra param for every function that follows
-        vec3 albedo_tex_rgb = texture(framebuffer_tex3, fTexcoords).rgb;   // Fetch original rgb color from tex
+        vec3 albedo_tex_rgb = pow(texture(framebuffer_tex3, fTexcoords).rgb, vec3(2.2));   // Fetch original rgb color from tex
         for (int i = 0; i < n_wls; i++)
         {
             // Get the currently sampled wl (from the texture we stored them in)

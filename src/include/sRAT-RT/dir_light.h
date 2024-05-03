@@ -18,7 +18,7 @@ public:
     void set_spectrum(Spectrum* spec) override;
 
     float get_power_multiplier() override;
-    void set_power_multiplier(float pm);
+    void set_power_multiplier(float pm) override;
 
     light_type get_light_type() override;
 

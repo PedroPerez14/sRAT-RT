@@ -54,6 +54,8 @@ private:
     int m_selected_resp_curve = 0;
     float m_wl_min;
     float m_wl_max;
+
+    float m_illumination_multiplier;    // Debug variable for the UI
     
     //// METHODS & FUNCS ////
     

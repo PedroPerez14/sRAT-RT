@@ -44,11 +44,6 @@ void main()
 {
     // L=0.2125R+0.7154G+0.0721B
     vec3 col = texture(tex_render, fTexcoords).rgb;
-    if(!do_spectral_uplifting)
-    {
-        
-        //out_color.rgb = reinhard(out_color.rgb);
-    }
-    //col = encode_sRGB(col);
+    col = encode_sRGB(col);
     out_color = vec4(col.rgb, 1.0);
 }

@@ -14,6 +14,7 @@ public:
     virtual Spectrum* get_spectrum() = 0;
     virtual void set_spectrum(Spectrum* spec) = 0;
     virtual float get_power_multiplier() = 0;
+    virtual void set_power_multiplier(float pm) = 0;
     virtual light_type get_light_type() = 0;
 
 protected:

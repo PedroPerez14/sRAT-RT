@@ -406,7 +406,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     }
 
     // TODO: IBL or Ambient Occlusion
-    vec3 ambient = vec3(0.03) * albedo* ao;
+    vec3 ambient = vec3(0.03) * albedo * ao.r;
     vec3 color = ambient + Lo;
     return color;
 }

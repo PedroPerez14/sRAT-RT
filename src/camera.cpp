@@ -1,4 +1,5 @@
 #include <sRAT-RT/camera.h>
+#include <iostream>
 
 // returns the view matrix calculated using Euler Angles and the LookAt Matrix
 glm::mat4 Camera::get_view_matrix()
@@ -54,7 +55,8 @@ void Camera::ProcessMouseScroll(float yoffset)
 
 glm::mat4 Camera::get_projection_matrix()
 {
-    return glm::perspective(glm::radians(Zoom), cam_width / cam_height, near_plane, far_plane);
+    glm::mat4 pers = glm::perspective(glm::radians(Zoom), (float)((float)cam_width / (float)cam_height), near_plane, far_plane);
+    return pers;
 }
 
 // calculates the front vector from the Camera's (updated) Euler Angles

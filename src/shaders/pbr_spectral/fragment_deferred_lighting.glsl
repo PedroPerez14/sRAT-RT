@@ -493,7 +493,6 @@ void main()
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
         vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100
         out_color = vec4(out_rgb, 1.0);
-        debug_1 = vec4(1,2,3,4);
     }
     else
     {

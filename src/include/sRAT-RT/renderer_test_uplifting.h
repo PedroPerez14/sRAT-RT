@@ -22,7 +22,7 @@ public:
     /// @param scene 
     void render_scene(Scene* scene);
 
-    void render_ui();
+    /// void render_ui();
 
     void handle_resize(int w, int h);
 

@@ -1,9 +1,11 @@
-#include <imgui.cpp>
-#include <imgui_impl_glfw.h>
+#pragma once
 #include <sRAT-RT/stb_image.h>
-#include <imgui_impl_opengl3.h>
 #include <sRAT-RT/response_curve.h>
 #include <sRAT-RT/renderer_test_uplifting.h>
+
+// #include <imgui.cpp>
+// #include <imgui_impl_glfw.h>
+// #include <imgui_impl_opengl3.h>
 
 RendererTestUplifting::RendererTestUplifting(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables, 
                 std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version)
@@ -110,131 +112,131 @@ void RendererTestUplifting::render_scene(Scene* scene)
     // App::run() is already doing it on its rendering loop, so we're done!
 }
 
-bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format)
-{
-	if (!display_format)
-		display_format = "%d";
+// bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format)
+// {
+// 	if (!display_format)
+// 		display_format = "%d";
 
-	char text_buf[64] = {};
+// 	char text_buf[64] = {};
     
-	ImFormatString(text_buf, IM_ARRAYSIZE(text_buf), display_format, *v);
+// 	ImFormatString(text_buf, IM_ARRAYSIZE(text_buf), display_format, *v);
 
-	// Map from [v_min,v_max] to [0,N]
-	const int countValues = int((v_max-v_min)/v_step);
-	int v_i = int((*v - v_min)/v_step);
-	const bool value_changed = ImGui::SliderInt(label, &v_i, 0, countValues, text_buf);
+// 	// Map from [v_min,v_max] to [0,N]
+// 	const int countValues = int((v_max-v_min)/v_step);
+// 	int v_i = int((*v - v_min)/v_step);
+// 	const bool value_changed = ImGui::SliderInt(label, &v_i, 0, countValues, text_buf);
 
-	// Remap from [0,N] to [v_min,v_max]
-	*v = v_min + float(v_i) * v_step;
-	return value_changed;
-}
+// 	// Remap from [0,N] to [v_min,v_max]
+// 	*v = v_min + float(v_i) * v_step;
+// 	return value_changed;
+// }
 
-bool Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items = -1)
-{
-   return ImGui::Combo(label, current_item, [](void* data, int idx, const char** out_text) { *out_text = ((const std::vector<std::string>*)data)->at(idx).c_str(); return true; }, (void*)&items, items_count, height_in_items);
-}
+// bool Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items = -1)
+// {
+//    return ImGui::Combo(label, current_item, [](void* data, int idx, const char** out_text) { *out_text = ((const std::vector<std::string>*)data)->at(idx).c_str(); return true; }, (void*)&items, items_count, height_in_items);
+// }
 
-void RendererTestUplifting::render_ui()
-{
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+// void RendererTestUplifting::render_ui()
+// {
+//     ImGui_ImplOpenGL3_NewFrame();
+//     ImGui_ImplGlfw_NewFrame();
+//     ImGui::NewFrame();
 
-    //ImGui::SliderInt("Number of Wavelengths: ", &num_wavelengths, 4, 40, "%d");
-    static bool showDemo = false;
-    ImGui::Begin("Config");
-    ImGui::TextUnformatted(("sRAT-RT v" + app_version).c_str());
-    ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
-    if(ImGui::Checkbox("Do spectral rendering", &do_spectral))
-    {
-        if(do_spectral)
-        {
-            resample_wls = true;
-        }
-    }
+//     //ImGui::SliderInt("Number of Wavelengths: ", &num_wavelengths, 4, 40, "%d");
+//     static bool showDemo = false;
+//     ImGui::Begin("Config");
+//     ImGui::TextUnformatted(("sRAT-RT v" + app_version).c_str());
+//     ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
+//     if(ImGui::Checkbox("Do spectral rendering", &do_spectral))
+//     {
+//         if(do_spectral)
+//         {
+//             resample_wls = true;
+//         }
+//     }
 
-    if(do_spectral)
-    {
-        if(SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 200, 4, "%d"))
-        {
-            resample_wls = true;
-        }
+//     if(do_spectral)
+//     {
+//         if(SliderFloatWithSteps("num_wavelengths ", &num_wavelengths, 4, 200, 4, "%d"))
+//         {
+//             resample_wls = true;
+//         }
 
-        if(ImGui::SliderFloat("min_wl", &wl_min, 300, 860))
-        {
-            resample_wls = true;
-            float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
-            float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
-            if(wl_min < wl_min_rc)
-                wl_min = wl_min_rc;
-            if(wl_min > wl_max_rc)
-            {
-                wl_min = wl_min_rc;
-                wl_max = wl_max_rc;
-            }
-            if(wl_min > wl_max)
-                wl_max = wl_min;
-        }
+//         if(ImGui::SliderFloat("min_wl", &wl_min, 300, 860))
+//         {
+//             resample_wls = true;
+//             float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+//             float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+//             if(wl_min < wl_min_rc)
+//                 wl_min = wl_min_rc;
+//             if(wl_min > wl_max_rc)
+//             {
+//                 wl_min = wl_min_rc;
+//                 wl_max = wl_max_rc;
+//             }
+//             if(wl_min > wl_max)
+//                 wl_max = wl_min;
+//         }
             
-        if(ImGui::SliderFloat("max_wl", &wl_max, 300, 860))
-        {
-            resample_wls = true;
-            float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
-            float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
-            if(wl_max > wl_max_rc)
-                wl_max = wl_max_rc;
-            if(wl_max < wl_min_rc)
-            {
-                wl_max = wl_max_rc;
-                wl_min = wl_min_rc;
-            }
-            if(wl_max < wl_min)
-                wl_min = wl_max;
-        }
+//         if(ImGui::SliderFloat("max_wl", &wl_max, 300, 860))
+//         {
+//             resample_wls = true;
+//             float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+//             float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+//             if(wl_max > wl_max_rc)
+//                 wl_max = wl_max_rc;
+//             if(wl_max < wl_min_rc)
+//             {
+//                 wl_max = wl_max_rc;
+//                 wl_min = wl_min_rc;
+//             }
+//             if(wl_max < wl_min)
+//                 wl_min = wl_max;
+//         }
             
-        if(ImGui::SliderInt("wl_sample_strat", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str()))
-        {
-            resample_wls = true;
-        }
+//         if(ImGui::SliderInt("wl_sample_strat", &sampling_strat, 0, STRAT_COUNT - 1, wl_interval_strat_names[sampling_strat].c_str()))
+//         {
+//             resample_wls = true;
+//         }
         
-        if (Combo("response_curve", &selected_resp_curve, response_curve_names, response_curve_names.size()))
-        {
-            resample_wls = true;
-            auto iter = response_curves_render->begin();
-            std::advance(iter,  selected_resp_curve);
-            // std::cout << "RESPONSE CURVE SELECTED: " << response_curve_names[selected_resp_curve] << ", " << iter->first << ", " << response_curves_render->at(response_curve_names[selected_resp_curve]) << std::endl;
-            float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
-            float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
-            if(wl_max > wl_max_rc || wl_max < wl_min_rc)
-                wl_max = wl_max_rc;
-            if(wl_min < wl_min_rc || wl_min > wl_max_rc)
-                wl_min = wl_min_rc;
-        }
-        ImGui::Checkbox("Is response XYZ?", &is_response_in_xyz);
-    }
+//         if (Combo("response_curve", &selected_resp_curve, response_curve_names, response_curve_names.size()))
+//         {
+//             resample_wls = true;
+//             auto iter = response_curves_render->begin();
+//             std::advance(iter,  selected_resp_curve);
+//             // std::cout << "RESPONSE CURVE SELECTED: " << response_curve_names[selected_resp_curve] << ", " << iter->first << ", " << response_curves_render->at(response_curve_names[selected_resp_curve]) << std::endl;
+//             float wl_min_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_min();
+//             float wl_max_rc = response_curves_render->at(response_curve_names.at(selected_resp_curve))->get_wl_max();
+//             if(wl_max > wl_max_rc || wl_max < wl_min_rc)
+//                 wl_max = wl_max_rc;
+//             if(wl_min < wl_min_rc || wl_min > wl_max_rc)
+//                 wl_min = wl_min_rc;
+//         }
+//         ImGui::Checkbox("Is response XYZ?", &is_response_in_xyz);
+//     }
 
-    ImGui::SeparatorText(" OTHER CONFIGURATION: ");
-    if(ImGui::Button("Reload Renderer Shaders"))
-    {
-        reload_shaders();
-    }
-    ImGui::SameLine();
-    if(ImGui::Button("Reload Per-Object Shaders"))
-    {
-        /// TODO: Do something here?
-        std::cout << "Work in progress!" << std::endl;
-    }
+//     ImGui::SeparatorText(" OTHER CONFIGURATION: ");
+//     if(ImGui::Button("Reload Renderer Shaders"))
+//     {
+//         reload_shaders();
+//     }
+//     ImGui::SameLine();
+//     if(ImGui::Button("Reload Per-Object Shaders"))
+//     {
+//         /// TODO: Do something here?
+//         std::cout << "Work in progress!" << std::endl;
+//     }
 
-    ImGui::SeparatorText(" IMGUI DEMO (DELETE LATER): ");
-    if (ImGui::Button("Show/Hide ImGui demo"))
-      showDemo = !showDemo;
-    ImGui::End();
-    if (showDemo)
-      ImGui::ShowDemoWindow(&showDemo);
+//     ImGui::SeparatorText(" IMGUI DEMO (DELETE LATER): ");
+//     if (ImGui::Button("Show/Hide ImGui demo"))
+//       showDemo = !showDemo;
+//     ImGui::End();
+//     if (showDemo)
+//       ImGui::ShowDemoWindow(&showDemo);
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
+//     ImGui::Render();
+//     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+// }
 
 void RendererTestUplifting::handle_resize(int w, int h)
 {

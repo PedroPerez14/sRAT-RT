@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _RENDERER_PBR_CLASS_H_
 #define _RENDERER_PBR_CLASS_H_
 
@@ -81,6 +82,11 @@ private:
     void blit_depth_buffer(GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* orig, 
                             GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* dest);
     void set_deferred_lighting_shader_uniforms(Scene* scene);
+
+    // UI stuff
+    bool Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items);
+    bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format);
+
 };
 
 #endif

@@ -1,3 +1,8 @@
+#pragma once
+#include <imgui.cpp>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <sRAT-RT/dir_light.h>
 #include <sRAT-RT/renderer_pbr.h>
 
@@ -20,7 +25,7 @@ RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2
     populate_resp_curves_list();                    // For UI purposes
     m_resample_wls = true;
     m_is_response_in_xyz = false;
-    m_do_spectral = false;
+    m_do_spectral = true;
     m_num_wavelengths = settings->get_num_wavelengths();
     m_wl_min = settings->get_wl_min();
     m_wl_max = settings->get_wl_max();
@@ -71,7 +76,7 @@ void RendererPBR::render_scene(Scene* scene)
     deferred_geometry_pass(scene);      // Render into the framebuffer
     
     m_deferred_framebuffer->unbind();
-    //m_pprocess_framebuffer->bind();
+    m_pprocess_framebuffer->bind();
 
     // Second pass, Deferred Shading: Use a giant shader to light all the scene at once
     deferred_lighting_pass(scene);          // Draw the scene at once to the postprocessing buffer
@@ -81,15 +86,130 @@ void RendererPBR::render_scene(Scene* scene)
     // Third pass, optional: Forward rendering for some objects that may need it (i.e area lights)
     //forward_pass(scene);                  // Also draws to gbuffer (should be a 2nd FBO) [EMPTY FOR NOW]
 
-    //m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer  
+    m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer  
 
     // Fourth pass, optional: Post processing, visual effects, tonemapping and gamma correction
-    //post_processing_pass(scene);            // Takes the postprocessing buffer as input
+    post_processing_pass(scene);            // Takes the postprocessing buffer as input
+}
+
+bool RendererPBR::Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items = -1)
+{
+   return ImGui::Combo(label, current_item, [](void* data, int idx, const char** out_text) { *out_text = ((const std::vector<std::string>*)data)->at(idx).c_str(); return true; }, (void*)&items, items_count, height_in_items);
+}
+
+bool RendererPBR::SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format)
+{
+	if (!display_format)
+		display_format = "%d";
+
+	char text_buf[64] = {};
+    
+	ImFormatString(text_buf, IM_ARRAYSIZE(text_buf), display_format, *v);
+
+	// Map from [v_min,v_max] to [0,N]
+	const int countValues = int((v_max-v_min)/v_step);
+	int v_i = int((*v - v_min)/v_step);
+	const bool value_changed = ImGui::SliderInt(label, &v_i, 0, countValues, text_buf);
+
+	// Remap from [0,N] to [v_min,v_max]
+	*v = v_min + float(v_i) * v_step;
+	return value_changed;
 }
 
 void RendererPBR::render_ui()
 {
-    /// TODO: IMPLEMENTAR DE LO ÚLTIMO PARA ASEGURARME DE QUE HAGO BIEN LAS RENDER PASSES
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    //ImGui::SliderInt("Number of Wavelengths: ", &num_wavelengths, 4, 40, "%d");
+    static bool showDemo = false;
+    ImGui::Begin("Config");
+    ImGui::TextUnformatted(("sRAT-RT v" + m_app_version).c_str());
+    ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
+    if(ImGui::Checkbox("Do spectral rendering", &m_do_spectral))
+    {
+        if(m_do_spectral)
+        {
+            m_resample_wls = true;
+        }
+    }
+
+    if(m_do_spectral)
+    {
+        if(SliderFloatWithSteps("num_wavelengths ", &m_num_wavelengths, 4, 200, 4, "%d"))
+        {
+            m_resample_wls = true;
+        }
+
+        if(ImGui::SliderFloat("min_wl", &m_wl_min, 300, 860))
+        {
+            m_resample_wls = true;
+            float wl_min_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_min();
+            float wl_max_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_max();
+            if(m_wl_min < wl_min_rc)
+                m_wl_min = wl_min_rc;
+            if(m_wl_min > wl_max_rc)
+            {
+                m_wl_min = wl_min_rc;
+                m_wl_max = wl_max_rc;
+            }
+            if(m_wl_min > m_wl_max)
+                m_wl_max = m_wl_min;
+        }
+            
+        if(ImGui::SliderFloat("max_wl", &m_wl_max, 300, 860))
+        {
+            m_resample_wls = true;
+            float wl_min_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_min();
+            float wl_max_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_max();
+            if(m_wl_max > wl_max_rc)
+                m_wl_max = wl_max_rc;
+            if(m_wl_max < wl_min_rc)
+            {
+                m_wl_max = wl_max_rc;
+                m_wl_min = wl_min_rc;
+            }
+            if(m_wl_max < m_wl_min)
+                m_wl_min = m_wl_max;
+        }
+            
+        if(ImGui::SliderInt("wl_sample_strat", &m_sampling_strat, 0, STRAT_COUNT - 1, m_wl_interval_strat_names[m_sampling_strat].c_str()))
+        {
+            m_resample_wls = true;
+        }
+        
+        if (Combo("response_curve", &m_selected_resp_curve, m_response_curve_names, m_response_curve_names.size()))
+        {
+            m_resample_wls = true;
+            auto iter = m_response_curves_render->begin();
+            std::advance(iter,  m_selected_resp_curve);
+            // std::cout << "RESPONSE CURVE SELECTED: " << response_curve_names[selected_resp_curve] << ", " << iter->first << ", " << response_curves_render->at(response_curve_names[selected_resp_curve]) << std::endl;
+            float wl_min_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_min();
+            float wl_max_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_max();
+            if(m_wl_max > wl_max_rc || m_wl_max < wl_min_rc)
+                m_wl_max = wl_max_rc;
+            if(m_wl_min < wl_min_rc || m_wl_min > wl_max_rc)
+                m_wl_min = wl_min_rc;
+        }
+        ImGui::Checkbox("Is response XYZ?", &m_is_response_in_xyz);
+    }
+
+    ImGui::SeparatorText(" OTHER CONFIGURATION: ");
+    if(ImGui::Button("Reload All Shaders"))
+    {
+        reload_shaders();
+    }
+
+    ImGui::SeparatorText(" IMGUI DEMO (DELETE LATER): ");
+    if (ImGui::Button("Show/Hide ImGui demo"))
+      showDemo = !showDemo;
+    ImGui::End();
+    if (showDemo)
+      ImGui::ShowDemoWindow(&showDemo);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void RendererPBR::handle_resize(int w, int h)

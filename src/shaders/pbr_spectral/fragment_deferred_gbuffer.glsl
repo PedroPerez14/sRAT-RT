@@ -18,8 +18,8 @@ vec3 getNormalFromMap()
 {
     vec3 tangentNormal = texture(normal_texture, TexCoords).xyz * 2.0 - 1.0;
 
-    vec3 Q1  = dFdx(gPosition.xyz);
-    vec3 Q2  = dFdy(gPosition.xyz);
+    vec3 Q1  = dFdx(FragPos.xyz);
+    vec3 Q2  = dFdy(FragPos.xyz);
     vec2 st1 = dFdx(TexCoords);
     vec2 st2 = dFdy(TexCoords);
 
@@ -34,15 +34,15 @@ vec3 getNormalFromMap()
 void main()
 {    
     // Sample both pbr textures
-    float metallic = texture(metallic_texture, TexCoords).g;
-    float roughness = texture(roughness_texture, TexCoords).g;
+    float metallic = texture(metallic_texture, TexCoords).r;
+    float roughness = texture(roughness_texture, TexCoords).r;
 
     vec3 map_normal = getNormalFromMap();
 
     // store the fragment position vector in the first gbuffer texture + mat_id
     gPosition.rgba = vec4(FragPos, mat_id);
     // also store the per-fragment normals into the gbuffer + metallic
-    gNormal.rgba = vec4(normalize(map_normal), metallic);
+    gNormal.rgba = vec4(map_normal, metallic);
     // and the diffuse per-fragment color + roughness
     gAlbedo.rgba = vec4(texture(diff_texture, TexCoords).rgb, roughness);
 }

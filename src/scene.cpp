@@ -178,7 +178,7 @@ bool Scene::hardcoded_scene_test()
     m_renderables.push_back(scene_model);
 
     /// SCENE LIGHTS
-    float light_mult = 1.0f;
+    float light_mult = 0.05f;
     glm::vec3 light_dir = glm::vec3(0.5f, -0.25f, -1.0f);
     Spectrum* spectrum = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
     DirLight* dir_light = new DirLight(light_dir, spectrum, light_mult);

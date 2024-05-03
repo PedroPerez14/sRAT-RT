@@ -162,12 +162,13 @@ bool Scene::hardcoded_scene_test()
     roughness_tex.type = "roughness_texture";
     textures.push_back(roughness_tex);
 
-    // Texture ao_tex;
-    // ao_tex.binding = 4;
-    // ao_tex.id = 0;
-    // ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
-    // ao_tex.type = "ao_texture";
-    // textures.push_back(ao_tex);
+    Texture ao_tex;
+    ao_tex.binding = 4;
+    ao_tex.id = 0;
+    //ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
+    ao_tex.path = "./resources/objects/backpack/ao.jpg";
+    ao_tex.type = "ao_texture";
+    textures.push_back(ao_tex);
 
     PBRMaterial* pbr_mat = new PBRMaterial(textures, "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl",
                                                     "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl");

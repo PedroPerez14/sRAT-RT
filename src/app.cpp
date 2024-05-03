@@ -52,6 +52,8 @@ void App::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     sleep_rendering = false;
     glViewport(0, 0, width, height);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+    
     renderer->handle_resize(width, height);
     if(width == 0 && height == 0)
         sleep_rendering = true;

@@ -16,6 +16,7 @@ class GLFrameBuffer {
     */
 
     GLuint m_frameBufferID;
+    GLuint m_depthBufferID;
     std::array<GLuint, N_TEXTURES> m_textureIDs;
 
     unsigned int m_width, m_height;
@@ -52,13 +53,12 @@ public:
         glDrawBuffers(N_TEXTURES, attachments); 
 
         /// DEPTH ///
-        GLuint captureRBO;
         // create a renderbuffer object for depth and stencil attachment (we won't be sampling these) 
-        glGenRenderbuffers(1, &captureRBO); 
-        glBindRenderbuffer(GL_RENDERBUFFER, captureRBO); 
+        glGenRenderbuffers(1, &m_depthBufferID); 
+        glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height); // use a single renderbuffer object for both a depth AND stencil buffer. 
     
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);	// now actually attach it 
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthBufferID);	// now actually attach it 
         // finally check if framebuffer is complete
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Framebuffer not complete!" << std::endl;
@@ -111,7 +111,9 @@ public:
         for (size_t i = 0; i < N_TEXTURES; i++)
         {
             GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]));
-            GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, width, height, 0, FORMAT, GL_FLOAT, NULL));
+            GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, m_width, m_height, 0, FORMAT, GL_FLOAT, NULL));
+            glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
         }
     }
     

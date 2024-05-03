@@ -23,7 +23,7 @@ layout (binding = 5) uniform sampler1DArray l_em_spec;      // array of 1D textu
 layout (binding = 6)  uniform sampler2D framebuffer_tex1;   // pos +  mat_id
 layout (binding = 7)  uniform sampler2D framebuffer_tex2;   // normal + ??? (1 float free for materials to use)
 layout (binding = 8)  uniform sampler2D framebuffer_tex3;   // albedo + ??? (1 float free for materials to use)
-layout (binding = 9)  uniform sampler2D framebuffer_tex4;   // free for materials to use
+layout (binding = 9)  uniform sampler2D framebuffer_tex4;   // ambient occlusion
 layout (binding = 10) uniform sampler2D framebuffer_tex5;   // free for materials to use
 layout (binding = 11) uniform sampler2D framebuffer_tex6;   // free for materials to use
 layout (binding = 12) uniform sampler2D framebuffer_tex7;   // free for materials to use
@@ -273,10 +273,12 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
 {
     // Decode values from the framebuffer textures
     vec4 _metallic_tex_sample = texture(framebuffer_tex2, fTexcoords).rgba;
-    float metallic = _metallic_tex_sample.a;
-    float roughness = texture(framebuffer_tex3, fTexcoords).a;
-    vec3 N = _metallic_tex_sample.rgb;
-    vec3 V = normalize(cam_pos - world_pos);
+    float metallic =            _metallic_tex_sample.a;
+    float roughness =           texture(framebuffer_tex3, fTexcoords).a;
+    float ao =                  texture(framebuffer_tex4, fTexcoords).r;
+
+    vec3 N =                    _metallic_tex_sample.rgb;
+    vec3 V =                    normalize(cam_pos - world_pos);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
@@ -331,7 +333,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
     }
 
     // TODO: IBL or Ambient Occlusion
-    float ambient = 0.03 * albedo;
+    float ambient = 0.03 * albedo * ao;
     float color = ambient + Lo;
     return color;
 }
@@ -348,6 +350,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     float roughness =   _albedo_tex_sample.a;
     float metallic =    _metallic_tex_sample.a;
     vec3 N =            _metallic_tex_sample.rgb;
+    vec3 ao =           texture(framebuffer_tex4, fTexcoords).rgb;
 
     vec3 V = normalize(cam_pos - world_pos);
 
@@ -403,7 +406,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     }
 
     // TODO: IBL or Ambient Occlusion
-    vec3 ambient = vec3(0.03) * albedo; // * ao (haven't done it yet)
+    vec3 ambient = vec3(0.03) * albedo* ao;
     vec3 color = ambient + Lo;
     return color;
 }

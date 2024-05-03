@@ -40,16 +40,6 @@ RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2
 
 void RendererPBR::render_scene(Scene* scene)
 {   
-    // std::cout << "---------------------------------------------------------" << std::endl;
-    // std::cout << "CAMERA POSITION: " << scene->get_camera()->Position.x << ", "
-    // << scene->get_camera()->Position.y << ", " << scene->get_camera()->Position.z << std::endl;
-    // glm::vec3 _t = scene->get_renderables().at(0)->get_transform()->get_pos();
-
-    // std::cout << "CAMERA ROTATION: YAW: " << scene->get_camera()->Yaw 
-    //         << ", PITCH: " << scene->get_camera()->Pitch << std::endl;
-
-    // std::cout << "SCENE ITEM POS: " << _t.x << ", " << _t.y << ", " << _t.z << std::endl;
-
     // Update the reference to the last rendered scene
     m_last_rendered_scene = scene;
     if(m_resample_wls)
@@ -59,8 +49,9 @@ void RendererPBR::render_scene(Scene* scene)
     }
     if(m_resize_flag)
     {
-        /// TODO: do something here if applies?
-        /// maybe change camera's aspect ratio by updating width and height?
+        std::cout << "RESIZE CAMERA! " << std::endl;
+        m_last_rendered_scene->get_camera()->cam_height = m_deferred_framebuffer->getHeight();
+        m_last_rendered_scene->get_camera()->cam_width = m_deferred_framebuffer->getWidth();
         m_resize_flag = false;
     }
 
@@ -73,9 +64,8 @@ void RendererPBR::render_scene(Scene* scene)
     m_deferred_framebuffer->bind();
     m_deferred_framebuffer->clear();
     
-    
     // First rendering pass, the Deferred Geometry Pass: Fill the GBuffer with data
-    deferred_geometry_pass(scene);      // Render into the framebuffer
+    deferred_geometry_pass(scene);          // Render into the framebuffer
     
     m_deferred_framebuffer->unbind();
     m_pprocess_framebuffer->bind();
@@ -224,10 +214,9 @@ void RendererPBR::render_ui()
 
 void RendererPBR::handle_resize(int w, int h)
 {
-    m_last_rendered_scene->get_camera()->cam_height = h;
-    m_last_rendered_scene->get_camera()->cam_width = w;
     m_deferred_framebuffer->resize(w, h);
     m_pprocess_framebuffer->resize(w, h);
+    std::cout << "RESIZE FRAMEBUFFERS! " << std::endl;
     m_resize_flag = true;
 }
 

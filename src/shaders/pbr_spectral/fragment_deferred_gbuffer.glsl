@@ -2,6 +2,7 @@
 layout (location = 0) out vec4 gPosition;       //.a component is mat_id
 layout (location = 1) out vec4 gNormal;         //.a component is metallic
 layout (location = 2) out vec4 gAlbedo;         //.a component is roughness
+layout (location = 3) out vec4 gAo;             // ambient occlusion
 
 in vec3 FragPos;
 in vec2 TexCoords;
@@ -11,6 +12,7 @@ layout (binding = 0) uniform sampler2D diff_texture;
 layout (binding = 1) uniform sampler2D normal_texture;
 layout (binding = 2) uniform sampler2D metallic_texture;
 layout (binding = 3) uniform sampler2D roughness_texture;
+layout (binding = 4) uniform sampler2D ao_texture;
 //layout (binding = 4) uniform sampler2D ao_texture;
 uniform int mat_id;
 
@@ -45,4 +47,6 @@ void main()
     gNormal.rgba = vec4(map_normal, metallic);
     // and the diffuse per-fragment color + roughness
     gAlbedo.rgba = vec4(texture(diff_texture, TexCoords).rgb, roughness);
+
+    gAo.rgba = vec4(texture(ao_texture, TexCoords).rgba);
 }

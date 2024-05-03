@@ -66,19 +66,22 @@ void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if (mouse_data.firstMouse)
+    if(!m_ignore_mouse_callback)
     {
+        if (mouse_data.firstMouse)
+        {
+            mouse_data.lastX = xpos;
+            mouse_data.lastY = ypos;
+            mouse_data.firstMouse = false;
+        }
+
+        float xoffset = xpos - mouse_data.lastX;
+        float yoffset = mouse_data.lastY - ypos;
         mouse_data.lastX = xpos;
         mouse_data.lastY = ypos;
-        mouse_data.firstMouse = false;
+
+        scene->get_camera()->ProcessMouseMovement(xoffset, yoffset, false);
     }
-
-    float xoffset = xpos - mouse_data.lastX;
-    float yoffset = mouse_data.lastY - ypos;
-    mouse_data.lastX = xpos;
-    mouse_data.lastY = ypos;
-
-    scene->get_camera()->ProcessMouseMovement(xoffset, yoffset, false);
 }
 
 void App::read_app_version()
@@ -101,6 +104,7 @@ App::App()
 {
     settings = new Settings();
     read_app_version();
+    m_ignore_mouse_callback = false;
     window = init_glfw_and_create_window(settings->get_window_width(),
         settings->get_window_height(), (settings->get_window_name() + " " + app_version).c_str());
     
@@ -113,7 +117,7 @@ App::App(std::string path_settings)
     // Load the settings and current app version
     settings = new Settings(path_settings);
     read_app_version();
-
+    m_ignore_mouse_callback = false;
     // Load the uplifting Look Up Tables
     look_up_tables = new std::unordered_map<colorspace, RGB2Spec*>();
     load_luts(settings->get_path_LUTs(), settings->get_file_extension_LUTs());
@@ -225,6 +229,12 @@ void App::process_input(GLFWwindow* window, Camera* camera, float deltaTime)
 		{
 			glfwSetWindowShouldClose(window, true);
 		}
+
+        m_ignore_mouse_callback = false;
+        if(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
+        {
+            m_ignore_mouse_callback = true; // don't move camera
+        }
 }
 
 /// Configure GLAD, callbacks and such, before going into the rendering loop in run()

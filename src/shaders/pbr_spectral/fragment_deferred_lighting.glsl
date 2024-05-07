@@ -42,6 +42,7 @@ struct Light                                                // Emission spectrum
 
 
 uniform bool do_spectral_uplifting;                         // if true, spectral rendering, if false, rgb rendering
+uniform bool enable_fog;                                    // if true, render quick opengl fog
 uniform bool convert_xyz_to_rgb;                            // in case our response curve is in xyz space
 uniform int n_wls;                                          // number of wavelengths to sample for rendering
 uniform float wl_min;                                       // the min wavelength of our sampleable range
@@ -319,19 +320,19 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
         float F = fresnel_schlick_approx(max(dot(H, V), 0.0), F0);
         
         float num = NDF * G * F;
-        float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-        float specular = num / max(denom, 0.0001);  // prevent a division by 0
+        float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // prevent a division by 0
+        
+        float specular = num / denom;
         
         float kS = F;
         // energy conservation, diff and spec can't be above 1.0
         float kD = 1.0 - kS;
-        kD *= 1.0 - metallic;
+        kD *= (1.0 - metallic);
         float n_dot_l = max(dot(N, L), 0.0);
-
+        
         // Add to outgoing radiance Lo (we already multiplied by fresnel)
         Lo += (kD * albedo / PI + specular) * radiance * n_dot_l;
     }
-
     // TODO: IBL or Ambient Occlusion
     float ambient = 0.03 * albedo * ao;
     float color = ambient + Lo;
@@ -414,17 +415,17 @@ vec3 pbr_material_shading(vec3 world_pos)
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
-// Spectral version
+// Spectral version (PBR MATERIAL LEAKS NANs SOMEWHERE!)
 float material_lighting(int mat_id, vec3 world_pos, float wavelength, float albedo_response)
 {
     // I have to put all the material IDs in a single file, 
     //      even id it's just for reference and readability
 
-    if(mat_id == 0) // debgug material
+    if(mat_id == 0) // debug material
     {
         return 0.0f;
     }
-    if(mat_id == 1) // pbr
+    if(mat_id == 2) // pbr
     {
         return pbr_material_shading(world_pos, wavelength, albedo_response);
     }
@@ -440,9 +441,9 @@ vec3 material_lighting(int mat_id, vec3 world_pos)
 
     if(mat_id == 0) // debgug material
     {
-        return vec3(1.0, 0.0, 0.0);
+        return vec3(1.0, 0.0, 1.0);
     }
-    if(mat_id == 1) // pbr
+    if(mat_id == 2) // pbr
     {
         return pbr_material_shading(world_pos);
     }
@@ -479,6 +480,27 @@ void main()
 
             // Actual material calculations for lighting
             float Lo = material_lighting(mat_id, world_pos, wavelength, albedo_spectral_response);
+            
+
+            float color = Lo;           // if we have fog, this will be changed
+            // FOG TEST [ Should I place this here?? ]
+            if(enable_fog)
+            {
+                float fog_density = 0.01;
+                float fog_color = jakob_hanika_uplifting(pow(vec3(0.08, 0.08, 0.08), vec3(1.0 / 2.2)), wavelength);
+                float z_s = 500.0;
+                if(length(world_pos.rgb) == 0.0)
+                {
+                    z_s = 500.0;
+                }
+                else
+                {
+                    z_s = min(500.0, abs(length(world_pos - cam_pos)));
+                }
+                float f = exp(-(fog_density * z_s));
+                color = (Lo * f) + ((1.0 - f) * fog_color);
+            }
+
 
             // Sensor response (tristimulus, can be XYZ or RGB)
             float wl_range = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
@@ -488,23 +510,39 @@ void main()
                 response_for_wl = RGB_to_XYZ(response_for_wl.rgb);
             }
             // Cumulative sum of responses for Riemann integration
-            final_xyz_color += vec4(vec3(Lo * response_for_wl), response_for_wl.g);
+            final_xyz_color += vec4(vec3(color * response_for_wl), response_for_wl.g);
         }
         // Riemann sum final step: Divide by number and size of steps
         final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * final_xyz_color);
-        
+
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
         vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100
         out_color = vec4(out_rgb, 1.0);
     }
     else
     {
-        // Simply return the rgb texture colors as normal
-        //out_color = vec4(texture(framebuffer_tex3, fTexcoords).rgb, 1.0);
-
         /// Render in RGB instead of spectrally
         // world_pos, mat_id are known 
-        vec3 Lo = material_lighting(mat_id, world_pos);    
+        vec3 Lo = material_lighting(mat_id, world_pos); 
+
+        // FOG TEST
+        if(enable_fog)
+        {
+            vec3 fog_density = vec3(0.01, 0.01, 0.01);
+            vec3 fog_color = vec3(0.4, 0.4, 0.7);
+            float z_s;
+            if(length(world_pos) == 0.0)
+            {
+                z_s = 50.0;
+            }
+            else
+            {
+                z_s = min(50, abs(length(world_pos - cam_pos)));
+            }
+            vec3 f = exp(-fog_density * vec3(z_s));
+            Lo = (Lo * f) + (vec3(1.0) - f) * fog_color;
+        }
+
         out_color = vec4(Lo, 1.0);
     }
 }

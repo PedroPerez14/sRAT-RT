@@ -10,7 +10,7 @@ uniform bool do_spectral_uplifting;
 vec3 encode_sRGB(vec3 linear_RGB)
 {
     vec3 a = 12.92 * linear_RGB;
-    vec3 b = 1.055 * pow(linear_RGB, vec3(1.0 / 2.4)) - 0.055;
+    vec3 b = 1.055 * pow(linear_RGB, vec3(1.0 / 2.2)) - 0.055;
     vec3 c = step(vec3(0.0031308), linear_RGB);
 
     return mix(a, b, c);

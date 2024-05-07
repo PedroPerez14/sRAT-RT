@@ -133,7 +133,8 @@ bool Scene::hardcoded_scene_test()
     Texture albedo_tex;
     albedo_tex.binding = 0;
     albedo_tex.id = 0;
-    albedo_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_albedo.png";
+    albedo_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_albedo.png";
+    //albedo_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_albedo.png";
     //albedo_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_basecolor.png";
     //albedo_tex.path = "../resources/objects/backpack/diffuse.jpg";
     albedo_tex.type = "diff_texture";
@@ -142,7 +143,8 @@ bool Scene::hardcoded_scene_test()
     Texture normals_tex;
     normals_tex.binding = 1;
     normals_tex.id = 0;
-    normals_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_normal-ogl.png";
+    normals_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_normal-ogl.png";
+    //normals_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_normal-ogl.png";
     //normals_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_normal.png";
     //normals_tex.path = "../resources/objects/backpack/normal.png";
     normals_tex.type = "normal_texture";
@@ -151,7 +153,8 @@ bool Scene::hardcoded_scene_test()
     Texture metallic_tex;
     metallic_tex.binding = 2;
     metallic_tex.id = 0;
-    metallic_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_metallic.png";
+    metallic_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_metallic.png";
+    //metallic_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_metallic.png";
     //metallic_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_metallic.png";
     //metallic_tex.path = "../resources/objects/backpack/specular.jpg";
     metallic_tex.type = "metallic_texture";
@@ -160,7 +163,8 @@ bool Scene::hardcoded_scene_test()
     Texture roughness_tex;
     roughness_tex.binding = 3;
     roughness_tex.id = 0;
-    roughness_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_roughness.png";
+    roughness_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_roughness.png";
+    //roughness_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_roughness.png";
     //roughness_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_roughness.png";
     //roughness_tex.path = "../resources/objects/backpack/roughness.jpg";
     roughness_tex.type = "roughness_texture";
@@ -169,7 +173,8 @@ bool Scene::hardcoded_scene_test()
     Texture ao_tex;
     ao_tex.binding = 4;
     ao_tex.id = 0;
-    ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
+    ao_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_ao.png";
+    //ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
     //ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
     //ao_tex.path = "../resources/objects/backpack/ao.jpg";
     ao_tex.type = "ao_texture";
@@ -177,9 +182,9 @@ bool Scene::hardcoded_scene_test()
 
     PBRMaterial* pbr_mat = new PBRMaterial(textures, "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl",
                                                     "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl");
-    Model* scene_model = new Model("../resources/objects/unit_sphere/sphere.obj", pbr_mat);                   //meshes are loaded automatically
-    //Model* scene_model = new Model("../resources/objects/funny/HARD_AF.obj", pbr_mat);                   //meshes are loaded automatically
-    //Model* scene_model = new Model("../resources/objects/backpack/backpack.obj", pbr_mat);                   //meshes are loaded automatically
+    Model* scene_model = new Model("../resources/objects/unit_sphere/sphere.obj", pbr_mat);                 //meshes are loaded automatically
+    //Model* scene_model = new Model("../resources/objects/funny/HARD_AF.obj", pbr_mat);                    //meshes are loaded automatically
+    //Model* scene_model = new Model("../resources/objects/backpack/backpack.obj", pbr_mat);                //meshes are loaded automatically
     scene_model->get_transform()->set_pos(glm::vec3(0.0f, 0.0f, 0.0f));
     scene_model->get_transform()->set_scale(glm::vec3(1.0f, 1.0f, 1.0f));
     m_renderables.push_back(scene_model);

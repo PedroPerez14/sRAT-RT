@@ -30,6 +30,7 @@ RendererPBR::RendererPBR(App* app)
     m_resample_wls = true;
     m_is_response_in_xyz = false;
     m_do_spectral = true;
+    m_enable_fog = false;
     m_num_wavelengths = settings->get_num_wavelengths();
     m_wl_min = settings->get_wl_min();
     m_wl_max = settings->get_wl_max();
@@ -172,6 +173,8 @@ void RendererPBR::render_ui()
             m_resample_wls = true;
         }
     }
+
+    ImGui::Checkbox("THE FOG IS COMING", &m_enable_fog);
 
     if(m_do_spectral)
     {
@@ -594,6 +597,7 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     m_deferred_lighting_pass_shader->use();
     ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
     m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
+    m_deferred_lighting_pass_shader->setBool("enable_fog", m_enable_fog);
     m_deferred_lighting_pass_shader->setBool("convert_xyz_to_rgb", m_is_response_in_xyz);
     m_deferred_lighting_pass_shader->setInt("n_wls", m_num_wavelengths);
     m_deferred_lighting_pass_shader->setFloat("wl_min", m_wl_min);

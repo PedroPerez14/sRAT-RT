@@ -47,7 +47,7 @@ PBRMaterial::PBRMaterial(const std::vector<Texture>& textures_to_load,
     load_textures(textures_to_load);
     mat_shader = new Shader(geom_pass_v_shader_path, geom_pass_f_shader_path);
     render_pass = DEFERRED_GEOMETRY;
-    mat_id = 1;         // Hardcoded (I'll do some table in a .h file, in the future this _should_ be different)
+    mat_id = 2;         // Hardcoded (I'll do some table in a .h file, in the future this _should_ be different)
 }
 
 PBRMaterial::~PBRMaterial()

@@ -15,6 +15,8 @@ Spectrum::Spectrum(std::string spectrum_file, glm::vec3 resp_rgb = glm::vec3(1.0
     std::string s_wl, s_resp;
     float wl, resp_r, resp_g, resp_b;   // It can be XYZ and not rgb, be careful
     
+    float max_resp = 0.0f;
+
     if(std::getline(f, line_wls) && std::getline(f, line_resp))
     {
         std::stringstream ss_wl(line_wls);
@@ -28,12 +30,21 @@ Spectrum::Spectrum(std::string spectrum_file, glm::vec3 resp_rgb = glm::vec3(1.0
 
             responses->push_back(lrs);
 
+            if(lrs.response > max_resp)
+                max_resp = lrs.response;
+
             if(n_samples == 0)
                 min_wl = std::stof(s_wl);
             max_wl = std::stof(s_wl);
 
             n_samples++;
         }
+    }
+    
+    // normalization step
+    for(int i = 0; i < responses->size(); i++)
+    {
+        responses->at(i).response /= max_resp;
     }
     // gen_emission_tex_1d();          // sets the id class member
 }

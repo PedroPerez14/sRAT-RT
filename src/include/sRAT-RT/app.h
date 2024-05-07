@@ -29,6 +29,7 @@ private:
     float m_deltatime;          // unit ???
     float m_lastframe_time;
     bool m_ignore_mouse_callback;
+    bool m_reset_mouse_mov_vars;
 
     bool sleep_rendering;       // If we minimized the window, don't render or it'll crash
 

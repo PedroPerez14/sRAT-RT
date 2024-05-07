@@ -68,11 +68,13 @@ void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if(!m_ignore_mouse_callback)
     {
-        if (mouse_data.firstMouse)
+        if (mouse_data.firstMouse || m_reset_mouse_mov_vars)
         {
             mouse_data.lastX = xpos;
             mouse_data.lastY = ypos;
             mouse_data.firstMouse = false;
+            if(m_reset_mouse_mov_vars)
+                m_reset_mouse_mov_vars = false;
         }
 
         float xoffset = xpos - mouse_data.lastX;
@@ -105,6 +107,7 @@ App::App()
     settings = new Settings();
     read_app_version();
     m_ignore_mouse_callback = false;
+    m_reset_mouse_mov_vars = false;
     window = init_glfw_and_create_window(settings->get_window_width(),
         settings->get_window_height(), (settings->get_window_name() + " " + app_version).c_str());
     
@@ -118,6 +121,7 @@ App::App(std::string path_settings)
     settings = new Settings(path_settings);
     read_app_version();
     m_ignore_mouse_callback = false;
+    m_reset_mouse_mov_vars = false;
     // Load the uplifting Look Up Tables
     look_up_tables = new std::unordered_map<colorspace, RGB2Spec*>();
     load_luts(settings->get_path_LUTs(), settings->get_file_extension_LUTs());
@@ -230,10 +234,18 @@ void App::process_input(GLFWwindow* window, Camera* camera, float deltaTime)
 			glfwSetWindowShouldClose(window, true);
 		}
 
-        m_ignore_mouse_callback = false;
+        
         if(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
         {
             m_ignore_mouse_callback = true; // don't move camera
+        }
+        else
+        {
+            if(m_ignore_mouse_callback == true)
+            {
+                m_reset_mouse_mov_vars = true;
+            }
+            m_ignore_mouse_callback = false;
         }
 }
 

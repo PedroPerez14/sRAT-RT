@@ -11,5 +11,6 @@ TODO LIST FOR BEING ABLE TO HAVE A RUNNING DEMO:
     ÜBERSHADER WITH A MAT_ID AND LOTS OF IFS (shaders LOVE ifs, the elites don't want you to know this)
     List of material ID correspondences between the big ass deferred shader and the material types:
                 - NULL  (only for testing purposes)  --- 0
-                - PBRMaterial (pbr_material .h .cpp) --- 1
-                - ???????                            --- 2
+                - DO NOT FUCKING USE THIS SLOT       --- 1
+                - PBRMaterial (pbr_material .h .cpp) --- 2
+                - ???????                            --- 3

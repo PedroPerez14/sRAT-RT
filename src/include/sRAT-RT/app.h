@@ -26,7 +26,7 @@ private:
     std::unordered_map<std::string, ResponseCurve*>* response_curves;
     std::string app_version;
 
-    float m_deltatime;
+    float m_deltatime;          // unit ???
     float m_lastframe_time;
     bool m_ignore_mouse_callback;
 
@@ -60,8 +60,12 @@ public:
     void framebuffer_size_callback(GLFWwindow* window, int width, int height);
     void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
     void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-
+    
+    float get_deltatime();
+    Settings* get_settings();
     std::string get_app_version();
+    std::unordered_map<colorspace, RGB2Spec*>* get_look_up_tables();
+    std::unordered_map<std::string, ResponseCurve*>* get_response_curves();
 };
 
 #endif

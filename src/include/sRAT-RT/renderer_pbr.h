@@ -2,6 +2,7 @@
 #ifndef _RENDERER_PBR_CLASS_H_
 #define _RENDERER_PBR_CLASS_H_
 
+#include <sRAT-RT/app.h>
 #include <sRAT-RT/settings.h>
 #include <sRAT-RT/renderer.h>
 #include <rgb2spec/rgb2spec.h>
@@ -13,8 +14,7 @@
 class RendererPBR : public Renderer
 {
 public:
-    RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
-                    std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version);
+    RendererPBR(App* app);
 
     void render_scene(Scene* scene);
     void render_ui();
@@ -33,6 +33,7 @@ private:
     { &RendererPBR::sample_equispaced, &RendererPBR::sample_alt1, &RendererPBR::sample_alt2 };
 
     //// ATTRIBUTES ////
+    App* m_app_ptr;                             // Reference to the app, in case we need info like the current deltatiem
     std::string m_app_version;
     Scene* m_last_rendered_scene;               // The last scene we were asked to render
     Shader* m_deferred_lighting_pass_shader;    // draw the screen based on the contents of the framebuffer
@@ -88,7 +89,8 @@ private:
     // UI stuff
     bool Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items);
     bool SliderFloatWithSteps(const char* label, int* v, float v_min, float v_max, float v_step, const char* display_format);
-
+    void main_menu_bar();           // test (for now, it'll stay most likely)
+    std::string get_fps_text();     // same
 };
 
 #endif

@@ -1,4 +1,5 @@
 #pragma once
+#include <iomanip>
 #include <imgui.cpp>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -6,23 +7,26 @@
 #include <sRAT-RT/dir_light.h>
 #include <sRAT-RT/renderer_pbr.h>
 
-RendererPBR::RendererPBR(Settings* settings, std::unordered_map<colorspace, RGB2Spec*>* look_up_tables,
-                    std::unordered_map<std::string, ResponseCurve*>* response_curves, std::string version)
+
+RendererPBR::RendererPBR(App* app)
 {
+    m_app_ptr = app;
+    Settings* settings = m_app_ptr->get_settings();
+
     m_deferred_lighting_pass_shader = new Shader("../src/shaders/pbr_spectral/vertex_deferred_lighting.glsl", "../src/shaders/pbr_spectral/fragment_deferred_lighting.glsl");
     m_postprocess_pass_shader = new Shader("../src/shaders/pbr_spectral/vertex_postprocess.glsl", "../src/shaders/pbr_spectral/fragment_postprocess.glsl");
-    m_app_version = version;
-    working_colorspace = settings->get_colorspace();                        // Just use sRGB
+    m_app_version = m_app_ptr->get_app_version();
+    working_colorspace = settings->get_colorspace();                        // just use sRGB pls
     m_deferred_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();  // check tex number for your machine
-    m_pprocess_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();                    // Only for the postprocessing pass
+    m_pprocess_framebuffer = new GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>();  // For the postprocessing stage
     unsigned int _width = settings->get_window_width();
     unsigned int _height = settings->get_window_height();
     m_deferred_framebuffer->init(_width, _height);
     m_pprocess_framebuffer->init(_width, _height);
-    lut_textures_create(look_up_tables);            // Convert the LUTs from data to 3D textures
-    m_response_curves_render = response_curves;
-    m_selected_resp_curve = 0;                      // Would be much better if the def. curve was the CIE one
-    populate_resp_curves_list();                    // For UI purposes
+    lut_textures_create(m_app_ptr->get_look_up_tables());                         // Convert the LUTs from data to 3D textures
+    m_response_curves_render = m_app_ptr->get_response_curves();
+    m_selected_resp_curve = 0;                                              // Would be much better if the def. curve was the CIE one
+    populate_resp_curves_list();                                            // For UI purposes
     m_resample_wls = true;
     m_is_response_in_xyz = false;
     m_do_spectral = true;
@@ -108,6 +112,44 @@ bool RendererPBR::SliderFloatWithSteps(const char* label, int* v, float v_min, f
 	return value_changed;
 }
 
+std::string RendererPBR::get_fps_text()
+{
+    float frametime = m_app_ptr->get_deltatime();
+    float fps = 1.0f / frametime;
+    std::stringstream stream;
+    std::stringstream stream2;
+    stream << std::fixed << std::setprecision(8) << (frametime / 1000.0f);
+    std::string _frametime = stream.str();
+    stream2 << std::fixed << std::setprecision(2) << fps;
+    std::string _fps = stream2.str();
+    return std::string("FPS: " + _fps + " (" + _frametime + " ms)");
+}
+
+void RendererPBR::main_menu_bar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        ImGui::TextUnformatted(get_fps_text().c_str());
+
+        if (ImGui::BeginMenu("File (non functional)"))
+        {
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Edit"))
+        {
+            if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
+            if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}  // Disabled item
+            ImGui::Separator();
+            if (ImGui::MenuItem("Cut", "CTRL+X")) {}
+            if (ImGui::MenuItem("Copy", "CTRL+C")) {}
+            if (ImGui::MenuItem("Paste", "CTRL+V")) {}
+            ImGui::EndMenu();
+        }
+        
+        ImGui::EndMainMenuBar();
+    }
+}
+
 void RendererPBR::render_ui()
 {
     ImGui_ImplOpenGL3_NewFrame();
@@ -116,6 +158,10 @@ void RendererPBR::render_ui()
 
     //ImGui::SliderInt("Number of Wavelengths: ", &num_wavelengths, 4, 40, "%d");
     static bool showDemo = false;
+
+    main_menu_bar();
+
+
     ImGui::Begin("Config");
     ImGui::TextUnformatted(("sRAT-RT v" + m_app_version).c_str());
     ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");

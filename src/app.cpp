@@ -273,7 +273,7 @@ bool App::init()
     load_response_curves(settings->get_path_response_curves());
 
     //renderer = new RendererTestUplifting(settings, look_up_tables, response_curves, app_version);
-    renderer = new RendererPBR(settings, look_up_tables, response_curves, app_version);
+    renderer = new RendererPBR(this);
 
     m_deltatime = 0.0f;
     m_lastframe_time = 0.0f;
@@ -328,4 +328,24 @@ void App::cleanup()
 std::string App::get_app_version()
 {
     return app_version;
+}
+
+float App::get_deltatime()
+{
+    return m_deltatime;
+}
+
+Settings* App::get_settings()
+{
+    return settings;
+}
+
+std::unordered_map<colorspace, RGB2Spec*>* App::get_look_up_tables()
+{
+    return look_up_tables;
+}
+
+std::unordered_map<std::string, ResponseCurve*>* App::get_response_curves()
+{
+    return response_curves;
 }

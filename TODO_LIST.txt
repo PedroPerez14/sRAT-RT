@@ -1,43 +1,15 @@
 # List of things to be done in the near (or far (or very far)) future, in no particular order:
 
-1.- Allow the definition and loading of custom shaders for the deferred shading pass of the scene (so far it's hardcoded in scene.cpp as {vertex/fragment}_deferred_lighting.glsl)
-    1.1.- Where will the users be able to specify it? Config .ini file or scene .xml file?
-2.- Define a proper format for our scenes, enabling specificaiton for models, textures, positions, rotations, etc.
-    2.1.- Copy Mitsuba's format? Or will it be time consuming? hmmm
-    2.2.- Hardcode a test scene? just specify a camera position, shaders, a target texture and a few shaders (deferred lighting are defined by default)
-
-
-
-Other tasks:    - Add a few materials and a test scene with a single dir light
-
-
-
-[18-04-24]
 TODO LIST FOR BEING ABLE TO HAVE A RUNNING DEMO:
-    - Implement the Transform class [DONE]
-    - Implement hierarchy Object(abstract)->RenderableObject(inherits)->Model(inherits again): [DONE]
-            - Object should have a Transform member                     [DONE]
-            - RenderableObject should have a Material member            [DONE]
-    - Add the 2 render passes/queues (3 but one of them is just the deferred geometry pass) [DONE, need to do ui]
-    - Later on, implement the hierarchy Object(abstract)->Light(inherits)->{point, dir}
-            - Light should have a Transform member              [DONE]
-            - Much later on, add the areaLight class that inherits from both Light and Model (class Light : virtual Public Object ?)
-    - Change Scene::Scene() to load a scene file (also define this format somewhere)            [HARDCODE IT FOR THE FIRST FEW TRIALS]
-    - Change Scene::load_model() with anything necessary to match the new code structure        [move load_model to load_renderable()]
-    - Modify Model::draw() and Mesh::draw() to take their Material into account                 [done? i think]
-            - Call the Material's set_shader_uniforms() method before drawing!                  [DONE]
-    - Add Camera class !!                                                                       [DONE, it already exists]
-            - Add a Camera member to the Renderer superclass                                    [DONE, it's in Scene, not Renderer]
-    - Add all the new files into CMakeLists.txt before compiling!                               [Gonna need to check this]
+    - Scene::Scene(), Scene::load_model() and define a proper scene file format!
+    - Check that all relevant files have been added to CMakeLists.txt !
+    - Refactor the UI rendering? So far it's kinda dirty
+    - Move the material IDs list below to a proper .h file? (At least a txt)
+    - In my PBR renderer the postprocess and deferred lighting pass shaders are hardcoded, load them from Settings!
 
 
-    NO NEED TO SET UNIFORMS FOR THE DEFERRED LIGHTING PASS AS LONG AS WE PASS THEM INSIDE THE GBUFFER
-    DO UPLIFITNG ON THE LIGHTING PASS (PUT ONLY THE RGB ORIGINAL TEX COLORS IN THE GBUFFER)
-    
-    FUCK IT WE BALL: ÜBERSHADER WITH A MAT_ID AND IFS (FUCK YEAH)
-                - How to figure out the material id? hmmmm --> just hardcode it in the class and be careful? idk lol
+    ÜBERSHADER WITH A MAT_ID AND LOTS OF IFS (shaders LOVE ifs, the elites don't want you to know this)
     List of material ID correspondences between the big ass deferred shader and the material types:
                 - NULL  (only for testing purposes)  --- 0
                 - PBRMaterial (pbr_material .h .cpp) --- 1
                 - ???????                            --- 2
-    (I will later have to change this but for now it's ok to just hardcode stuff and remember it)

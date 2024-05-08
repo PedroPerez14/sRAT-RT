@@ -101,6 +101,11 @@ Camera* Scene::get_camera() const
     return camera;
 }
 
+Volume* Scene::get_global_volume() const
+{
+    return global_volume;
+}
+
 std::vector<RenderableObject*> Scene::get_renderables() const
 {
     return m_renderables;
@@ -126,65 +131,64 @@ bool Scene::hardcoded_scene_test()
     /// SCENE CAMERA
     camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));   // camera at position [0,0,3]
 
-
     /// SCENE MODELS (EACH NEEDS A MATERIAL WHICH NEEDS TEXTURES)
     std::vector<Texture> textures;
 
     Texture albedo_tex;
     albedo_tex.binding = 0;
     albedo_tex.id = 0;
-    albedo_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_albedo.png";
+    //albedo_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_albedo.png";
     //albedo_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_albedo.png";
     //albedo_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_basecolor.png";
-    //albedo_tex.path = "../resources/objects/backpack/diffuse.jpg";
+    albedo_tex.path = "../resources/objects/backpack/diffuse.jpg";
     albedo_tex.type = "diff_texture";
     textures.push_back(albedo_tex);
 
     Texture normals_tex;
     normals_tex.binding = 1;
     normals_tex.id = 0;
-    normals_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_normal-ogl.png";
+    //normals_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_normal-ogl.png";
     //normals_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_normal-ogl.png";
     //normals_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_normal.png";
-    //normals_tex.path = "../resources/objects/backpack/normal.png";
+    normals_tex.path = "../resources/objects/backpack/normal.png";
     normals_tex.type = "normal_texture";
     textures.push_back(normals_tex);
 
     Texture metallic_tex;
     metallic_tex.binding = 2;
     metallic_tex.id = 0;
-    metallic_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_metallic.png";
+    //metallic_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_metallic.png";
     //metallic_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_metallic.png";
     //metallic_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_metallic.png";
-    //metallic_tex.path = "../resources/objects/backpack/specular.jpg";
+    metallic_tex.path = "../resources/objects/backpack/specular.jpg";
     metallic_tex.type = "metallic_texture";
     textures.push_back(metallic_tex);
 
     Texture roughness_tex;
     roughness_tex.binding = 3;
     roughness_tex.id = 0;
-    roughness_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_roughness.png";
+    //roughness_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_roughness.png";
     //roughness_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_roughness.png";
     //roughness_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_roughness.png";
-    //roughness_tex.path = "../resources/objects/backpack/roughness.jpg";
+    roughness_tex.path = "../resources/objects/backpack/roughness.jpg";
     roughness_tex.type = "roughness_texture";
     textures.push_back(roughness_tex);
 
     Texture ao_tex;
     ao_tex.binding = 4;
     ao_tex.id = 0;
-    ao_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_ao.png";
+    //ao_tex.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_ao.png";
     //ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
     //ao_tex.path = "../resources/pbr_materials/whispy-grass-meadow-bl/wispy-grass-meadow_ao.png";
-    //ao_tex.path = "../resources/objects/backpack/ao.jpg";
+    ao_tex.path = "../resources/objects/backpack/ao.jpg";
     ao_tex.type = "ao_texture";
     textures.push_back(ao_tex);
 
     PBRMaterial* pbr_mat = new PBRMaterial(textures, "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl",
                                                     "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl");
-    Model* scene_model = new Model("../resources/objects/unit_sphere/sphere.obj", pbr_mat);                 //meshes are loaded automatically
+    //Model* scene_model = new Model("../resources/objects/unit_sphere/sphere.obj", pbr_mat);                 //meshes are loaded automatically
     //Model* scene_model = new Model("../resources/objects/funny/HARD_AF.obj", pbr_mat);                    //meshes are loaded automatically
-    //Model* scene_model = new Model("../resources/objects/backpack/backpack.obj", pbr_mat);                //meshes are loaded automatically
+    Model* scene_model = new Model("../resources/objects/backpack/backpack.obj", pbr_mat);                //meshes are loaded automatically
     scene_model->get_transform()->set_pos(glm::vec3(0.0f, 0.0f, 0.0f));
     scene_model->get_transform()->set_scale(glm::vec3(1.0f, 1.0f, 1.0f));
     m_renderables.push_back(scene_model);
@@ -197,6 +201,8 @@ bool Scene::hardcoded_scene_test()
     m_scene_lights.push_back(dir_light);
 
     generate_emission_tex_array();      // needs to be called after placing all the lights in the scene
+
+    global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004));
 
     return true;
 }

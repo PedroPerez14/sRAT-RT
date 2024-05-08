@@ -486,18 +486,6 @@ void RendererPBR::deferred_geometry_pass(Scene* scene)
 
 void RendererPBR::deferred_lighting_pass(Scene* scene)
 {
-    //std::cout << "DEFERRED LIGHTING PASS !" << std::endl;
-    /// INFO: Bindings for the deferred lighting shader:
-    //
-    // The LUTs will get the first 3 bindings, 0, 1 and 2.
-    // The chosen wavelengths texture will get the 4th (3)
-    // And then, the response curve (5th, 4)
-    //
-    // After that, the Framebuffer textures will be allocated:
-    // Position (with material id on its .a component) --> 6th, 5
-    // Normals (w/ Metallic coeff on its .a component only for PBRMat) --> 7th, 6
-    // Albedo (w/ Roughness coeff on its .a component only for PBRMat) --> 8th, 7
-    // Any material specific textures will follow from the 9th (8) place onwards
     m_deferred_lighting_pass_shader->use();
     unsigned int lut_3d_ids[3];
     memcpy(lut_3d_ids, m_lut_textures->at(get_colorspace()).tex_ids, 3 * sizeof(unsigned int));
@@ -521,10 +509,14 @@ void RendererPBR::deferred_lighting_pass(Scene* scene)
     GL_CHECK(glActiveTexture(GL_TEXTURE5));
     GL_CHECK(glBindTexture(GL_TEXTURE_1D_ARRAY, scene->get_emission_tex_array_id()));
 
-    // Framebuffer contents, 6..15 if additional textures are required by the material
+    // Volume spectral parameters, 6
+    GL_CHECK(glActiveTexture(GL_TEXTURE6));
+    GL_CHECK(glBindTexture(GL_TEXTURE_1D, scene->get_global_volume()->get_spectral_tex_id()));
+
+    // Framebuffer contents, 7..14 if additional textures are required by the material
     for(int i = 0; i < FRAMEBUFFER_TEX_NUM; i++)
     {
-        GL_CHECK(glActiveTexture(GL_TEXTURE6 + i));
+        GL_CHECK(glActiveTexture(GL_TEXTURE7 + i));
         glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i));
     }
     
@@ -596,8 +588,16 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
 {
     m_deferred_lighting_pass_shader->use();
     ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
+    Volume* g_vol = scene->get_global_volume();
+    
     m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
+
     m_deferred_lighting_pass_shader->setBool("enable_fog", m_enable_fog);
+    m_deferred_lighting_pass_shader->setVec3("vol_sigma_s_rgb", g_vol->get_sigma_s_rgb());    // m^-1
+    m_deferred_lighting_pass_shader->setVec3("vol_sigma_a_rgb", g_vol->get_sigma_a_rgb());    // m^-1
+    m_deferred_lighting_pass_shader->setFloat("wl_min_vol", g_vol->get_response_curve()->get_wl_min());
+    m_deferred_lighting_pass_shader->setFloat("wl_max_vol", g_vol->get_response_curve()->get_wl_max());
+
     m_deferred_lighting_pass_shader->setBool("convert_xyz_to_rgb", m_is_response_in_xyz);
     m_deferred_lighting_pass_shader->setInt("n_wls", m_num_wavelengths);
     m_deferred_lighting_pass_shader->setFloat("wl_min", m_wl_min);

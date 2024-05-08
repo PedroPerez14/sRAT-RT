@@ -10,6 +10,7 @@
 #include <sRAT-RT/model.h>
 #include <sRAT-RT/light.h>
 #include <sRAT-RT/camera.h>
+#include <sRAT-RT/volume.h>
 #include <sRAT-RT/gl_check.h>
 #include <sRAT-RT/framebuffer.h>
 
@@ -17,6 +18,7 @@ class Scene
 {
 private:
     Camera* camera;
+    Volume* global_volume;
     std::vector<RenderableObject*> m_renderables;
     std::vector<Light*> m_scene_lights;
     unsigned int m_lights_emission_tex_array_id;
@@ -31,6 +33,8 @@ public:
     Scene(const std::string& scene_file_path);
 
     Camera* get_camera() const;
+    Volume* get_global_volume() const;
+    
     std::vector<RenderableObject*> get_renderables() const;
     std::vector<Light*> get_lights() const;
     int get_num_lights() const;

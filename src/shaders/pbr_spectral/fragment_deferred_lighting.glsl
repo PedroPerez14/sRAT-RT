@@ -1,6 +1,8 @@
 #version 450 core
 
 #define MAX_NUM_LIGHTS 16                                   // let's not put too many lights or the shader will cry
+#define MAX_FOG_DISTANCE 100.0                              // Should this be an uniform variable? hmm
+
 
 in vec2 fTexcoords;
 
@@ -19,15 +21,16 @@ layout (binding = 2) uniform sampler3D LUT_3;
 layout (binding = 3) uniform sampler1D tex_wavelengths;
 layout (binding = 4) uniform sampler1D resp_curve;
 layout (binding = 5) uniform sampler1DArray l_em_spec;      // array of 1D textures containing the spectral emission of every light in the scene
+layout (binding = 6) uniform sampler1D vol_sigma_a_s_spec;  // texture with absorption and scattering spectral coeffs (r and g channels), m^-1
 /////////////////////////////////// FRAMEBUFFER BEGINS HERE ///////////////////////////////////
-layout (binding = 6)  uniform sampler2D framebuffer_tex1;   // pos +  mat_id
-layout (binding = 7)  uniform sampler2D framebuffer_tex2;   // normal + ??? (1 float free for materials to use)
-layout (binding = 8)  uniform sampler2D framebuffer_tex3;   // albedo + ??? (1 float free for materials to use)
-layout (binding = 9)  uniform sampler2D framebuffer_tex4;   // ambient occlusion
-layout (binding = 10) uniform sampler2D framebuffer_tex5;   // free for materials to use
-layout (binding = 11) uniform sampler2D framebuffer_tex6;   // free for materials to use
-layout (binding = 12) uniform sampler2D framebuffer_tex7;   // free for materials to use
-layout (binding = 13) uniform sampler2D framebuffer_tex8;   // free for materials to use
+layout (binding = 7)  uniform sampler2D framebuffer_tex1;   // pos + mat_id
+layout (binding = 8)  uniform sampler2D framebuffer_tex2;   // normal + ??? (1 float free for materials to use)
+layout (binding = 9)  uniform sampler2D framebuffer_tex3;   // albedo + ??? (1 float free for materials to use)
+layout (binding = 10) uniform sampler2D framebuffer_tex4;   // ambient occlusion
+layout (binding = 11) uniform sampler2D framebuffer_tex5;   // free for materials to use
+layout (binding = 12) uniform sampler2D framebuffer_tex6;   // free for materials to use
+layout (binding = 13) uniform sampler2D framebuffer_tex7;   // free for materials to use
+layout (binding = 14) uniform sampler2D framebuffer_tex8;   // free for materials to use
 
 struct Light                                                // Emission spectrum has to be in a separate texture array :/
 {
@@ -42,7 +45,7 @@ struct Light                                                // Emission spectrum
 
 
 uniform bool do_spectral_uplifting;                         // if true, spectral rendering, if false, rgb rendering
-uniform bool enable_fog;                                    // if true, render quick opengl fog
+uniform bool enable_fog;                                    // if true, render fog on top of the scene
 uniform bool convert_xyz_to_rgb;                            // in case our response curve is in xyz space
 uniform int n_wls;                                          // number of wavelengths to sample for rendering
 uniform float wl_min;                                       // the min wavelength of our sampleable range
@@ -53,6 +56,10 @@ uniform int res = 64;                                       // don't touch, LUT_
 uniform vec3 cam_pos;                                       // the position of our current camera
 uniform int num_lights;                                     // real number of lights in the scene
 uniform Light scene_lights[MAX_NUM_LIGHTS];                 // the lights in our scene
+uniform vec3 vol_sigma_s_rgb;                               // scattering coefficient of the scene's global volume (fog), in rgb (m^-1)
+uniform vec3 vol_sigma_a_rgb;                               // absorption coefficient of the scene's global volume (fog), in rgb (m^-1)
+uniform float wl_min_vol;                                   // the smallest wavelength in our volumetric data
+uniform float wl_max_vol;                                   // the biggest wavelength in out volumetric data
 
 //// SOME CONSTANT VARIABLES ////
 const mat3 XYZ_TO_RGB_M = mat3(
@@ -482,23 +489,26 @@ void main()
             float Lo = material_lighting(mat_id, world_pos, wavelength, albedo_spectral_response);
             
 
-            float color = Lo;           // if we have fog, this will be changed
-            // FOG TEST [ Should I place this here?? ]
+            float color = Lo;           // if we have fog, this var's value will change
+
+            // Volume (fog) calculations
             if(enable_fog)
             {
-                float fog_density = 0.01;
-                float fog_color = jakob_hanika_uplifting(pow(vec3(0.08, 0.08, 0.08), vec3(1.0 / 2.2)), wavelength);
-                float z_s = 500.0;
-                if(length(world_pos.rgb) == 0.0)
+                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                
+                float vol_sigma_a_spec = vol_sample_spec.r;                             // sigma_a is .r
+                float vol_sigma_s_spec = vol_sample_spec.g;                             // sigma_s is .g
+                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                float vol_albedo_spec = vol_sigma_s_spec / vol_sigma_t_spec;
+
+                float z_s = MAX_FOG_DISTANCE;
+                if(length(world_pos) != 0.0)
                 {
-                    z_s = 500.0;
+                    z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
                 }
-                else
-                {
-                    z_s = min(500.0, abs(length(world_pos - cam_pos)));
-                }
-                float f = exp(-(fog_density * z_s));
-                color = (Lo * f) + ((1.0 - f) * fog_color);
+                float f = exp(-(vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
+                color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
             }
 
 
@@ -525,22 +535,18 @@ void main()
         // world_pos, mat_id are known 
         vec3 Lo = material_lighting(mat_id, world_pos); 
 
-        // FOG TEST
+        // Volume (Jerlov's fog) calculations
         if(enable_fog)
         {
-            vec3 fog_density = vec3(0.01, 0.01, 0.01);
-            vec3 fog_color = vec3(0.4, 0.4, 0.7);
-            float z_s;
-            if(length(world_pos) == 0.0)
+            vec3 vol_sigma_t_rgb = vol_sigma_s_rgb + vol_sigma_a_rgb;
+            vec3 vol_albedo_rgb = vol_sigma_s_rgb / vol_sigma_t_rgb;
+            float z_s = MAX_FOG_DISTANCE;
+            if(length(world_pos) != 0.0)
             {
-                z_s = 50.0;
+                z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
             }
-            else
-            {
-                z_s = min(50, abs(length(world_pos - cam_pos)));
-            }
-            vec3 f = exp(-fog_density * vec3(z_s));
-            Lo = (Lo * f) + (vec3(1.0) - f) * fog_color;
+            vec3 f = exp(-vol_sigma_t_rgb * vec3(z_s)) + (exp(-vol_sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
+            Lo = (Lo * f) + (vec3(1.0) - f) * vol_albedo_rgb;
         }
 
         out_color = vec4(Lo, 1.0);

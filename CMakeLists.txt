@@ -60,6 +60,7 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/light.h
         src/include/sRAT-RT/light_spectrum.h
         src/include/sRAT-RT/dir_light.h
+        src/include/sRAT-RT/point_light.h
         src/include/sRAT-RT/volume.h
 
         # Source files
@@ -77,6 +78,7 @@ add_executable(sRAT-RT
         src/renderer_pbr.cpp
         src/light_spectrum.cpp
         src/dir_light.cpp
+        src/point_light.cpp
         src/volume.cpp
         src/main.cpp
 )

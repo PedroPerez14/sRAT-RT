@@ -60,6 +60,9 @@ uniform vec3 vol_sigma_s_rgb;                               // scattering coeffi
 uniform vec3 vol_sigma_a_rgb;                               // absorption coefficient of the scene's global volume (fog), in rgb (m^-1)
 uniform float wl_min_vol;                                   // the smallest wavelength in our volumetric data
 uniform float wl_max_vol;                                   // the biggest wavelength in out volumetric data
+uniform float sigma_a_mult;                                 // multiplier for our fog's absorption coefficient
+uniform float sigma_s_mult;                                 // multiplier for our fog's scattering coefficient
+
 
 //// SOME CONSTANT VARIABLES ////
 const mat3 XYZ_TO_RGB_M = mat3(
@@ -315,7 +318,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
             L = normalize(l.position.xyz - world_pos);
             H = normalize(V + L);  // halfway vector
             float distance = length(l.position.xyz - world_pos);
-            att = 1.0 / (distance * distance);
+            att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
         }
         // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
         float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
@@ -389,7 +392,7 @@ vec3 pbr_material_shading(vec3 world_pos)
             L = normalize(l.position.xyz - world_pos);
             H = normalize(V + L);  // halfway vector
             float distance = length(l.position.xyz - world_pos);
-            att = 1.0 / (distance * distance);
+            att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
         }
         // per-light radiance
         vec3 radiance = l.emission_rgb * l.emission_mult * att;
@@ -497,8 +500,8 @@ void main()
                 float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
                 vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
                 
-                float vol_sigma_a_spec = vol_sample_spec.r;                             // sigma_a is .r
-                float vol_sigma_s_spec = vol_sample_spec.g;                             // sigma_s is .g
+                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
                 float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
                 float vol_albedo_spec = vol_sigma_s_spec / vol_sigma_t_spec;
 
@@ -507,7 +510,7 @@ void main()
                 {
                     z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
                 }
-                float f = exp(-(vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
+                float f = exp((-vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
                 color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
             }
 
@@ -526,7 +529,7 @@ void main()
         final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * final_xyz_color);
 
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
-        vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100
+        vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100 (or 1)
         out_color = vec4(out_rgb, 1.0);
     }
     else
@@ -538,15 +541,17 @@ void main()
         // Volume (Jerlov's fog) calculations
         if(enable_fog)
         {
-            vec3 vol_sigma_t_rgb = vol_sigma_s_rgb + vol_sigma_a_rgb;
-            vec3 vol_albedo_rgb = vol_sigma_s_rgb / vol_sigma_t_rgb;
+            vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+            vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+            vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+            vec3 albedo_rgb = sigma_s_rgb / sigma_t_rgb; 
             float z_s = MAX_FOG_DISTANCE;
             if(length(world_pos) != 0.0)
             {
                 z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
             }
-            vec3 f = exp(-vol_sigma_t_rgb * vec3(z_s)) + (exp(-vol_sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
-            Lo = (Lo * f) + (vec3(1.0) - f) * vol_albedo_rgb;
+            vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
+            Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
         }
 
         out_color = vec4(Lo, 1.0);

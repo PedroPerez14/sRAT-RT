@@ -58,6 +58,8 @@ private:
     float m_wl_max;
 
     float m_illumination_multiplier;    // Debug variable for the UI
+    float m_fog_sigma_a_mult;           // Debug variable for the UI
+    float m_fog_sigma_s_mult;           // Debug variable for the UI
     
     //// METHODS & FUNCS ////
     
@@ -69,7 +71,7 @@ private:
     void reload_shaders();
     void populate_resp_curves_list();
     void gen_sampled_wls_tex1d();
-    void check_wls_range();
+    void check_wls_range(Scene* scene);
 
     colorspace get_colorspace() const;
     void set_colorspace(colorspace _c);

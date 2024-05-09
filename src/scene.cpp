@@ -4,6 +4,7 @@
 #include <sRAT-RT/model.h>
 
 #include <sRAT-RT/dir_light.h>      /// TODO: Delete after hardcoding my test scene
+#include <sRAT-RT/point_light.h>    /// TODO: Delete after hardcoding my test scene
 
 Scene::Scene()
 {
@@ -133,7 +134,9 @@ bool Scene::hardcoded_scene_test()
 
     /// SCENE MODELS (EACH NEEDS A MATERIAL WHICH NEEDS TEXTURES)
     std::vector<Texture> textures;
+    std::vector<Texture> textures_2;
 
+    /// TEXTURES 1 ///
     Texture albedo_tex;
     albedo_tex.binding = 0;
     albedo_tex.id = 0;
@@ -184,25 +187,83 @@ bool Scene::hardcoded_scene_test()
     ao_tex.type = "ao_texture";
     textures.push_back(ao_tex);
 
+
+
+
+    /// TEXTURES 2
+    Texture albedo_tex_2;
+    albedo_tex_2.binding = 0;
+    albedo_tex_2.id = 0;
+    albedo_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_albedo.png";
+    albedo_tex_2.type = "diff_texture";
+    textures_2.push_back(albedo_tex_2);
+
+    Texture normals_tex_2;
+    normals_tex_2.binding = 1;
+    normals_tex_2.id = 0;
+    normals_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_normal-ogl.png";
+    normals_tex_2.type = "normal_texture";
+    textures_2.push_back(normals_tex_2);
+
+    Texture metallic_tex_2;
+    metallic_tex_2.binding = 2;
+    metallic_tex_2.id = 0;
+    metallic_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_metallic.png";
+    metallic_tex_2.type = "metallic_texture";
+    textures_2.push_back(metallic_tex_2);
+
+    Texture roughness_tex_2;
+    roughness_tex_2.binding = 3;
+    roughness_tex_2.id = 0;
+    roughness_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_roughness.png";
+    roughness_tex_2.type = "roughness_texture";
+    textures_2.push_back(roughness_tex_2);
+
+    Texture ao_tex_2;
+    ao_tex_2.binding = 4;
+    ao_tex_2.id = 0;
+    ao_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_ao.png";
+    ao_tex_2.type = "ao_texture";
+    textures_2.push_back(ao_tex_2);
+
+
     PBRMaterial* pbr_mat = new PBRMaterial(textures, "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl",
                                                     "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl");
-    //Model* scene_model = new Model("../resources/objects/unit_sphere/sphere.obj", pbr_mat);                 //meshes are loaded automatically
+
+    PBRMaterial* pbr_mat_2 = new PBRMaterial(textures_2, "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl",
+                                                    "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl");
     //Model* scene_model = new Model("../resources/objects/funny/HARD_AF.obj", pbr_mat);                    //meshes are loaded automatically
-    Model* scene_model = new Model("../resources/objects/backpack/backpack.obj", pbr_mat);                //meshes are loaded automatically
+    Model* scene_model = new Model("../resources/objects/backpack/backpack.obj", pbr_mat);                  //meshes are loaded automatically
+    Model* scene_model_2 = new Model("../resources/objects/unit_sphere/sphere.obj", pbr_mat_2);             //meshes are loaded automatically
+
     scene_model->get_transform()->set_pos(glm::vec3(0.0f, 0.0f, 0.0f));
     scene_model->get_transform()->set_scale(glm::vec3(1.0f, 1.0f, 1.0f));
+    scene_model_2->get_transform()->set_pos(glm::vec3(4.0f, 0.0f, 0.0f));
+    scene_model_2->get_transform()->set_scale(glm::vec3(1.0f, 1.0f, 1.0f));
     m_renderables.push_back(scene_model);
+    m_renderables.push_back(scene_model_2);
 
     /// SCENE LIGHTS
-    float light_mult = 0.05f;
+    float light_mult = 10.0f;
     glm::vec3 light_dir = glm::vec3(0.5f, -0.25f, -1.0f);
-    Spectrum* spectrum = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
-    DirLight* dir_light = new DirLight(light_dir, spectrum, light_mult);
+    Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
+    Spectrum* spectrum_A = new Spectrum("../resources/emitter_curves/CIE_std_illum_A.csv", glm::vec3(1.0f, 0.68235294117f, 0.3725490196f));
+    
+    DirLight* dir_light = new DirLight(light_dir, spectrum_D65, light_mult);
     m_scene_lights.push_back(dir_light);
+    
+    float att_c = 1.0f;
+    float att_l = 0.7f;
+    float att_q = 1.8f;
+    //PointLight* pl_1 = new PointLight(glm::vec3(-1, 0, 1), spectrum_D65, light_mult, att_c, att_l, att_q);
+    PointLight* pl_2 = new PointLight(glm::vec3(1, 0, 1), spectrum_A, light_mult, att_c, att_l, att_q);
+    //m_scene_lights.push_back(pl_1);
+    m_scene_lights.push_back(pl_2);
 
     generate_emission_tex_array();      // needs to be called after placing all the lights in the scene
 
-    global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004));
+    /// FINALLY, SCENE VOLUME (FOG)
+    global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004)); // hardcoded hehehe
 
     return true;
 }

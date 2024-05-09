@@ -5,6 +5,7 @@
 #include <imgui_impl_opengl3.h>
 
 #include <sRAT-RT/dir_light.h>
+#include <sRAT-RT/point_light.h>
 #include <sRAT-RT/renderer_pbr.h>
 
 
@@ -34,13 +35,14 @@ RendererPBR::RendererPBR(App* app)
     m_num_wavelengths = settings->get_num_wavelengths();
     m_wl_min = settings->get_wl_min();
     m_wl_max = settings->get_wl_max();
-    check_wls_range();
     m_sampling_strat = (int)STRAT_EQUISPACED;
     glGenTextures(1, &m_sampled_wls_tex_id);        // Create and populate 1D tex with chosen WLs
     gen_sampled_wls_tex1d();
     init_fullscreen_quad();                         // Finally, generate our full screen quad
 
-    m_illumination_multiplier = 1.0f;
+    m_illumination_multiplier = 10.0f;
+    m_fog_sigma_a_mult = 1.0f;
+    m_fog_sigma_s_mult = 1.0f;
 }
 
 void RendererPBR::render_scene(Scene* scene)
@@ -55,10 +57,11 @@ void RendererPBR::render_scene(Scene* scene)
     if(m_resize_flag)
     {
         std::cout << "RESIZE CAMERA! " << std::endl;
-        m_last_rendered_scene->get_camera()->cam_height = m_deferred_framebuffer->getHeight();
-        m_last_rendered_scene->get_camera()->cam_width = m_deferred_framebuffer->getWidth();
+        scene->get_camera()->cam_height = m_deferred_framebuffer->getHeight();
+        scene->get_camera()->cam_width = m_deferred_framebuffer->getWidth();
         m_resize_flag = false;
     }
+    check_wls_range(scene);
 
     GL_CHECK(glClearColor(0.0, 0.0, 0.0, 1.0));
     // Clear default framebuffer (the screen)
@@ -119,7 +122,7 @@ std::string RendererPBR::get_fps_text()
     float fps = 1.0f / frametime;
     std::stringstream stream;
     std::stringstream stream2;
-    stream << std::fixed << std::setprecision(8) << (frametime / 1000.0f);
+    stream << std::fixed << std::setprecision(8) << (frametime * 1000.0f);
     std::string _frametime = stream.str();
     stream2 << std::fixed << std::setprecision(2) << fps;
     std::string _fps = stream2.str();
@@ -239,24 +242,27 @@ void RendererPBR::render_ui()
     ImGui::SeparatorText(" Lights Config:");
     if(ImGui::SliderFloat("power_mult_light", &m_illumination_multiplier, 0.0, 100.0))
     {
-        m_last_rendered_scene->get_lights().at(0)->set_power_multiplier(m_illumination_multiplier);
+        /// TODO: Do for all the lights !!! (and move away from here)
+        for(Light* light : m_last_rendered_scene->get_lights())
+        {
+            light->set_power_multiplier(m_illumination_multiplier);
+        }
     }
 
-    ImGui::SeparatorText(" OTHER CONFIGURATION: ");
+    if(m_enable_fog)
+    {
+        ImGui::SeparatorText(" Fog Config: ");
+        ImGui::SliderFloat("Absorption multiplier", &m_fog_sigma_a_mult, 0.0, 10.0);
+        ImGui::SliderFloat("Scattering multiplier", &m_fog_sigma_s_mult, 0.0, 10.0);
+    }
+
+    ImGui::SeparatorText(" Other Options: ");
     if(ImGui::Button("Reload All Shaders"))
     {
         reload_shaders();
     }
 
-
-    
-    ImGui::SeparatorText(" IMGUI DEMO (DELETE LATER): ");
-    if (ImGui::Button("Show/Hide ImGui demo"))
-      showDemo = !showDemo;
     ImGui::End();
-    if (showDemo)
-      ImGui::ShowDemoWindow(&showDemo);
-
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -398,9 +404,10 @@ void RendererPBR::gen_sampled_wls_tex1d()
     {
         std::cout << "WAVELENGTHS[" << i << "]: " << wavelengths[i] << std::endl;
     }
-
+    glDeleteTextures(1, &m_sampled_wls_tex_id);
+    glGenTextures(1, &m_sampled_wls_tex_id);
     glBindTexture(GL_TEXTURE_1D, m_sampled_wls_tex_id);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -408,14 +415,50 @@ void RendererPBR::gen_sampled_wls_tex1d()
     delete wavelengths;
 }
 
-void RendererPBR::check_wls_range()
+void RendererPBR::check_wls_range(Scene* scene)
 {
+    // init to unfeasible values
+    float overall_max_min_wl = m_wl_min;        // the biggest min wl among emitters, chosen max wl, fog and response curve range
+    float overall_min_max_wl = m_wl_max;        // the smallest max wl among emitters, chosen max wl, fog and response curve range
+
+    // Compare against all the lights in the scene
+    
+    for(Light* light : scene->get_lights())
+    {
+        Spectrum* spec = light->get_spectrum();
+        float light_min_wl = spec->get_wl_min();
+        float light_max_wl = spec->get_wl_max();
+
+        if(light_min_wl > overall_max_min_wl)
+            overall_max_min_wl = light_min_wl;
+        if(light_max_wl < overall_min_max_wl)
+            overall_min_max_wl = light_max_wl;
+    }
+
+    // now, with the chosen response curve
     float wl_min_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_min();
     float wl_max_rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve))->get_wl_max();
-    if(m_wl_max > wl_max_rc || m_wl_max < wl_min_rc)
-                m_wl_max = wl_max_rc;
-            if(m_wl_min < wl_min_rc || m_wl_min > wl_max_rc)
-                m_wl_min = wl_min_rc;
+    if(wl_max_rc < overall_min_max_wl)
+        overall_min_max_wl = wl_max_rc;
+    if(wl_min_rc > overall_max_min_wl)
+        overall_max_min_wl = wl_min_rc;
+
+    // Check the fog (only if it's enabled)
+    if(m_enable_fog)
+    {
+        ResponseCurve* rc = scene->get_global_volume()->get_response_curve();
+        float max_wl_fog = rc->get_wl_max();
+        float min_wl_fog = rc->get_wl_min();
+
+        if(max_wl_fog < overall_min_max_wl)
+        overall_min_max_wl = max_wl_fog;
+        if(min_wl_fog > overall_max_min_wl)
+            overall_max_min_wl = min_wl_fog;
+    }
+
+    // Finally, set the wl range properly
+    m_wl_min = overall_max_min_wl;
+    m_wl_max = overall_min_max_wl;
 }
 
 colorspace RendererPBR::get_colorspace() const
@@ -597,6 +640,9 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     m_deferred_lighting_pass_shader->setVec3("vol_sigma_a_rgb", g_vol->get_sigma_a_rgb());    // m^-1
     m_deferred_lighting_pass_shader->setFloat("wl_min_vol", g_vol->get_response_curve()->get_wl_min());
     m_deferred_lighting_pass_shader->setFloat("wl_max_vol", g_vol->get_response_curve()->get_wl_max());
+    m_deferred_lighting_pass_shader->setFloat("sigma_a_mult", m_fog_sigma_a_mult);
+    m_deferred_lighting_pass_shader->setFloat("sigma_s_mult", m_fog_sigma_s_mult);
+
 
     m_deferred_lighting_pass_shader->setBool("convert_xyz_to_rgb", m_is_response_in_xyz);
     m_deferred_lighting_pass_shader->setInt("n_wls", m_num_wavelengths);
@@ -626,17 +672,17 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
             m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_min", dl->get_spectrum()->get_wl_min());
             m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_max", dl->get_spectrum()->get_wl_max());
         }
-        else // if(POINT_LIGHT)
+        else if(POINT_LIGHT)
         {
-            /// TODO: Implement Point Lights, do after the first few tests
-            // PointLight* pl = dynamic_cast<PointLight*>(&light);
-            // m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(pl->get_transform().get_pos(), 1));
-            // m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].direction", glm::vec3(0.0f,0.0f,0.0f));
-            // m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", pl->get_attenuation());
-            // m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].emission_rgb", pl->get_spectrum()->get_responses_rgb());
-            // m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].emission_mult", pl->get_power_multiplier());
-            // m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_min", pl->get_spectrum()->get_wl_min());
-            // m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_max", pl->get_spectrum()->get_wl_max());
+            PointLight* pl = dynamic_cast<PointLight*>(light);
+            glm::vec3 pos = pl->get_transform()->get_pos();
+            m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(pos.x, pos.y, pos.z, 1.0f));
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].direction", glm::vec3(0.0f,0.0f,0.0f));
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", pl->get_att_vec());
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].emission_rgb", pl->get_spectrum()->get_responses_rgb());
+            m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].emission_mult", pl->get_power_multiplier());
+            m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_min", pl->get_spectrum()->get_wl_min());
+            m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_max", pl->get_spectrum()->get_wl_max());
         }
         i++;
     }

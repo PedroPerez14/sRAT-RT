@@ -51,6 +51,7 @@ void Camera::ProcessMouseScroll(float yoffset)
         Zoom = 1.0f;
     if (Zoom > 45.0f)
         Zoom = 45.0f;
+    std::cout << "FOV value: " << Zoom << std::endl;
 }
 
 glm::mat4 Camera::get_projection_matrix()

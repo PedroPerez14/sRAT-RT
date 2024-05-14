@@ -59,6 +59,7 @@ void RendererPBR::render_scene(Scene* scene)
         std::cout << "RESIZE CAMERA! " << std::endl;
         scene->get_camera()->cam_height = m_deferred_framebuffer->getHeight();
         scene->get_camera()->cam_width = m_deferred_framebuffer->getWidth();
+        scene->get_camera()->updateCameraVectors();
         m_resize_flag = false;
     }
     check_wls_range(scene);

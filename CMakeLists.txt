@@ -63,6 +63,8 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/point_light.h
         src/include/sRAT-RT/volume.h
 
+        src/include/sRAT-RT/hardcoded_scenes.h
+
         # Source files
         src/include/rgb2spec/rgb2spec.c
         src/include/sRAT-RT/stb_image.cpp

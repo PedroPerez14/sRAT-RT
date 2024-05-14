@@ -27,7 +27,13 @@ private:
 
     void generate_emission_tex_array();
 
-    bool hardcoded_scene_test();            /// TODO: DELETE LATER !!!1!
+
+
+    /// TODO: Delete the test scenes at some point (and add a proper scene file loader!)
+    bool test_scene();
+    bool diffuse_spheres_scene();
+
+
 public:
     Scene();
     Scene(const std::string& scene_file_path);

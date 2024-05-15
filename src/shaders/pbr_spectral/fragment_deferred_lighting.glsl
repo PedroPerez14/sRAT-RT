@@ -379,7 +379,7 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
 
         float n_dot_l = max(dot(N, L), 0.0);
         // Add to outgoing radiance Lo
-        Lo += (albedo / PI) * radiance * n_dot_l;
+        Lo += (albedo / PI) * radiance * n_dot_l * att;
     }
     float ambient = 0.0;    // In case I need to tune something
     return Lo + ambient;
@@ -488,7 +488,7 @@ vec3 diffuse_material_shading(vec3 world_pos)
 
         float n_dot_l = max(dot(N, L), 0.0);
         // Add to outgoing radiance Lo
-        Lo += (albedo / PI) * radiance * n_dot_l;
+        Lo += (albedo / PI) * radiance * n_dot_l * att;
     }
     vec3 ambient = vec3(0.0, 0.0, 0.0);    // In case I need to tune something
     return Lo + ambient;
@@ -610,7 +610,11 @@ void main()
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
         vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100 (or 1)
         out_color = vec4(out_rgb, 1.0);
-        //out_color = vec4(texture(framebuffer_tex2, fTexcoords).rgb, 1.0);
+        //out_color = vec4(normalize(texture(framebuffer_tex2, fTexcoords).rgb) * 0.5 + vec3(0.5), 1.0);
+        // vec3 _N = texture(framebuffer_tex2, fTexcoords).rgb;
+        // vec3 _L = normalize(-scene_lights[0].direction);
+        // float ndotl = dot(_N, _L);
+        //out_color = vec4(ndotl, ndotl, ndotl, 1.0);
     }
     else
     {

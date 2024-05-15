@@ -12,7 +12,7 @@
 #include <sRAT-RT/shader.h>
 #include <sRAT-RT/renderable_object.h>
 
-#include <sRAT-RT/pbr_material.h>
+#include <sRAT-RT/pbr_material.h>   // Should remove this? (i have no clue why is this here)
 
 /*
  * Now the Model class loads the 3d models, along with its meshes and textures,

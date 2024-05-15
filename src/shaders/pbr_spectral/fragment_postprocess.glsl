@@ -16,7 +16,7 @@ vec3 encode_sRGB(vec3 linear_RGB)
     return mix(a, b, c);
 }
 
-const float gamma = 2.2;
+const float gamma = 2.4;
 const float exposure = 0.5;
 
 vec3 reinhard(vec3 v)

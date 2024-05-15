@@ -288,12 +288,13 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
     float roughness =           texture(framebuffer_tex3, fTexcoords).a;
     float ao =                  texture(framebuffer_tex4, fTexcoords).r;
 
-    vec3 N =                    _metallic_tex_sample.rgb;
+    vec3 N =                    normalize(_metallic_tex_sample.xyz);
     vec3 V =                    normalize(cam_pos - world_pos);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
     float F0 = 0.04; 
+    //float F0 = albedo; 
     F0 = mix(F0, albedo, metallic);
 
     // reflectance equation
@@ -311,7 +312,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
         {
             L = normalize(-l.direction);
             H = normalize(V + L);
-            // att = 1.0;
+            att = 1.0;
         }
         else    // point light
         {
@@ -339,14 +340,49 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
         float kD = 1.0 - kS;
         kD *= (1.0 - metallic);
         float n_dot_l = max(dot(N, L), 0.0);
-        
         // Add to outgoing radiance Lo (we already multiplied by fresnel)
-        Lo += (kD * albedo / PI + specular) * radiance * n_dot_l;
+        Lo += ((kD * albedo / PI) + specular) * radiance * n_dot_l;
     }
     // TODO: IBL or Ambient Occlusion
-    float ambient = 0.03 * albedo * ao;
+    //float ambient = 0.03 * albedo * ao;
+    float ambient = 0.0;
     float color = ambient + Lo;
     return color;
+}
+
+/// INFO: Spectral Version
+float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
+{
+    vec3 N = normalize(texture(framebuffer_tex2, fTexcoords).xyz);
+    float Lo = 0.0;
+
+    for(int i = 0; i < n_lights; i++)
+    {
+        vec3 L = vec3(0,0,0);           // assign values later
+        float att = 1.0;
+
+        Light l = scene_lights[i];
+        if(l.position.w == 0)   // dir light
+        {
+            L = normalize(-l.direction);
+            att = 1.0;
+        }
+        else    // point light
+        {
+            L = normalize(l.position.xyz - world_pos);
+            float distance = abs(length(l.position.xyz - world_pos));
+            att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
+        }
+        // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
+        float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
+        float radiance = texture(l_em_spec, vec2(_l_emission_coord, float(i))).r * l.emission_mult * att;
+
+        float n_dot_l = max(dot(N, L), 0.0);
+        // Add to outgoing radiance Lo
+        Lo += (albedo / PI) * radiance * n_dot_l;
+    }
+    float ambient = 0.0;    // In case I need to tune something
+    return Lo + ambient;
 }
 
 /// INFO: RGB Version
@@ -360,7 +396,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     vec3 albedo =       pow(_albedo_tex_sample.rgb, vec3(2.2));
     float roughness =   _albedo_tex_sample.a;
     float metallic =    _metallic_tex_sample.a;
-    vec3 N =            _metallic_tex_sample.rgb;
+    vec3 N =            normalize(_metallic_tex_sample.xyz);
     vec3 ao =           texture(framebuffer_tex4, fTexcoords).rgb;
 
     vec3 V = normalize(cam_pos - world_pos);
@@ -368,6 +404,7 @@ vec3 pbr_material_shading(vec3 world_pos)
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
     vec3 F0 = vec3(0.04); 
+    //vec3 F0 = albedo; 
     F0 = mix(F0, albedo, metallic);
 
     // reflectance equation
@@ -385,7 +422,7 @@ vec3 pbr_material_shading(vec3 world_pos)
         {
             L = normalize(-l.direction);
             H = normalize(V + L);
-            // att = 1.0;
+            att = 1.0;
         }
         else    // point light
         {
@@ -413,13 +450,48 @@ vec3 pbr_material_shading(vec3 world_pos)
         float n_dot_l = max(dot(N, L), 0.0);
 
         // Add to outgoing radiance Lo (we already multiplied by fresnel)
-        Lo += (kD * albedo / PI + specular) * radiance * n_dot_l;
+        Lo += ((kD * albedo / PI) + specular) * radiance * n_dot_l;
     }
 
     // TODO: IBL or Ambient Occlusion
-    vec3 ambient = vec3(0.03) * albedo * ao.r;
+    // vec3 ambient = vec3(0.03) * albedo * ao.r;
+    vec3 ambient = vec3(0.0, 0.0, 0.0);
     vec3 color = ambient + Lo;
     return color;
+}
+
+/// INFO: RGB Version
+vec3 diffuse_material_shading(vec3 world_pos)
+{
+    vec3 albedo = pow(texture(framebuffer_tex3, fTexcoords).rgb, vec3(2.2));
+    vec3 N = normalize(texture(framebuffer_tex2, fTexcoords).xyz);
+    vec3 Lo = vec3(0.0);
+
+    for(int i = 0; i < n_lights; i++)
+    {
+        vec3 L = vec3(0,0,0);           // assign values later
+        float att = 1.0;
+
+        Light l = scene_lights[i];
+        if(l.position.w == 0)   // dir light
+        {
+            L = normalize(-l.direction);
+            att = 1.0;
+        }
+        else    // point light
+        {
+            L = normalize(l.position.xyz - world_pos);
+            float distance = abs(length(l.position.xyz - world_pos));
+            att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
+        }
+        vec3 radiance = l.emission_rgb.rgb;
+
+        float n_dot_l = max(dot(N, L), 0.0);
+        // Add to outgoing radiance Lo
+        Lo += (albedo / PI) * radiance * n_dot_l;
+    }
+    vec3 ambient = vec3(0.0, 0.0, 0.0);    // In case I need to tune something
+    return Lo + ambient;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -439,6 +511,10 @@ float material_lighting(int mat_id, vec3 world_pos, float wavelength, float albe
     {
         return pbr_material_shading(world_pos, wavelength, albedo_response);
     }
+    if(mat_id == 3) // diffuse
+    {
+        return diffuse_material_shading(world_pos, wavelength, albedo_response);
+    }
     // else (material id not known, return black)
     return 0.0f;
 }
@@ -456,6 +532,10 @@ vec3 material_lighting(int mat_id, vec3 world_pos)
     if(mat_id == 2) // pbr
     {
         return pbr_material_shading(world_pos);
+    }
+    if(mat_id == 3) // diffuse
+    {
+        return diffuse_material_shading(world_pos);
     }
     // else (material id not known, return black)
     return vec3(0.0, 0.0, 0.0);
@@ -491,7 +571,6 @@ void main()
             // Actual material calculations for lighting
             float Lo = material_lighting(mat_id, world_pos, wavelength, albedo_spectral_response);
             
-
             float color = Lo;           // if we have fog, this var's value will change
 
             // Volume (fog) calculations
@@ -531,6 +610,7 @@ void main()
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
         vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100 (or 1)
         out_color = vec4(out_rgb, 1.0);
+        //out_color = vec4(texture(framebuffer_tex2, fTexcoords).rgb, 1.0);
     }
     else
     {

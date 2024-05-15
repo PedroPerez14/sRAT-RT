@@ -62,6 +62,7 @@ add_executable(sRAT-RT
         src/include/sRAT-RT/dir_light.h
         src/include/sRAT-RT/point_light.h
         src/include/sRAT-RT/volume.h
+        src/include/sRAT-RT/diffuse_material.h
 
         src/include/sRAT-RT/hardcoded_scenes.h
 
@@ -82,6 +83,7 @@ add_executable(sRAT-RT
         src/dir_light.cpp
         src/point_light.cpp
         src/volume.cpp
+        src/diffuse_material.cpp
         src/main.cpp
 )
 

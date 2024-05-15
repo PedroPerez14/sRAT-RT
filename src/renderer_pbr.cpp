@@ -667,7 +667,7 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
             DirLight* dl = dynamic_cast<DirLight*>(light);
             m_deferred_lighting_pass_shader->setVec4("scene_lights[" + std::to_string(i) + "].position", glm::vec4(dl->get_transform()->get_pos(), 0));
             m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].direction", dl->get_dir());
-            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", glm::vec3(0.0f, 0.0f, 0.0f));
+            m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].attenuation", glm::vec3(1.0f, 1.0f, 1.0f));
             m_deferred_lighting_pass_shader->setVec3("scene_lights[" + std::to_string(i) + "].emission_rgb", dl->get_spectrum()->get_responses_rgb());
             m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].emission_mult", dl->get_power_multiplier());
             m_deferred_lighting_pass_shader->setFloat("scene_lights[" + std::to_string(i) + "].wl_min", dl->get_spectrum()->get_wl_min());

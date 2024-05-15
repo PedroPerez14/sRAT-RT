@@ -5,9 +5,10 @@
  * Here I'm going to place all the scenes 
  * that I need to hardcode for my experiments
  * 
- * (Loading scenes will not be in the version I submit for my thesis)
+ * (Loading scenes will not be in the version I submit for my master's thesis project)
 */
 #include <sRAT-RT/scene.h>
+#include <sRAT-RT/diffuse_material.h>
 
 bool Scene::test_scene()
 {
@@ -379,26 +380,29 @@ bool Scene::diffuse_spheres_scene()
     textures_15.push_back(ao_tex_sphere_15);
     
 
-    char* path_vertex = "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl";
-    char* path_fragment = "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl";
+    char* path_vertex_pbr = "../src/shaders/pbr_spectral/vertex_deferred_gbuffer.glsl";
+    char* path_fragment_pbr = "../src/shaders/pbr_spectral/fragment_deferred_gbuffer.glsl";
 
-    PBRMaterial* mat_floor = new PBRMaterial(textures_floor, path_vertex, path_fragment);
-    PBRMaterial* mat_wall = new PBRMaterial(textures_wall, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_1 = new PBRMaterial(textures_1, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_2 = new PBRMaterial(textures_2, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_3 = new PBRMaterial(textures_3, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_4 = new PBRMaterial(textures_4, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_5 = new PBRMaterial(textures_5, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_6 = new PBRMaterial(textures_6, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_7 = new PBRMaterial(textures_7, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_8 = new PBRMaterial(textures_8, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_9 = new PBRMaterial(textures_9, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_10 = new PBRMaterial(textures_10, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_11 = new PBRMaterial(textures_11, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_12 = new PBRMaterial(textures_12, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_13 = new PBRMaterial(textures_13, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_14 = new PBRMaterial(textures_14, path_vertex, path_fragment);
-    PBRMaterial* mat_sphere_15 = new PBRMaterial(textures_15, path_vertex, path_fragment);
+    char* path_vertex_diff = "../src/shaders/pbr_spectral/diffuse_vertex_def_gbuffer.glsl";
+    char* path_fragment_diff = "../src/shaders/pbr_spectral/diffuse_fragment_def_gbuffer.glsl";
+
+    DiffuseMaterial* mat_floor = new DiffuseMaterial(textures_floor, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_wall = new DiffuseMaterial(textures_wall, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_1 = new DiffuseMaterial(textures_1, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_2 = new DiffuseMaterial(textures_2, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_3 = new DiffuseMaterial(textures_3, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_4 = new DiffuseMaterial(textures_4, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_5 = new DiffuseMaterial(textures_5, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_6 = new DiffuseMaterial(textures_6, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_7 = new DiffuseMaterial(textures_7, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_8 = new DiffuseMaterial(textures_8, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_9 = new DiffuseMaterial(textures_9, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_10 = new DiffuseMaterial(textures_10, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_11 = new DiffuseMaterial(textures_11, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_12 = new DiffuseMaterial(textures_12, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_13 = new DiffuseMaterial(textures_13, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_14 = new DiffuseMaterial(textures_14, path_vertex_diff, path_fragment_diff);
+    DiffuseMaterial* mat_sphere_15 = new DiffuseMaterial(textures_15, path_vertex_diff, path_fragment_diff);
 
     Model* model_floor = new Model("../resources/objects/mitsuba_scene_spheres/meshes/floor.obj", mat_floor);
     Model* model_wall = new Model("../resources/objects/mitsuba_scene_spheres/meshes/wall.obj", mat_wall);
@@ -417,9 +421,6 @@ bool Scene::diffuse_spheres_scene()
     Model* model_sphere_13 = new Model("../resources/objects/mitsuba_scene_spheres/meshes/Sphere13.obj", mat_sphere_13);
     Model* model_sphere_14 = new Model("../resources/objects/mitsuba_scene_spheres/meshes/Sphere14.obj", mat_sphere_14);
     Model* model_sphere_15 = new Model("../resources/objects/mitsuba_scene_spheres/meshes/Sphere15.obj", mat_sphere_15);
-
-    /// TODO: Set transform positions?????
-    //model_wall->get_transform()->set_rot(glm::vec3(0.0f, 0.0f, 0.0f));
 
     m_renderables.push_back(model_floor);
     m_renderables.push_back(model_wall);
@@ -440,12 +441,18 @@ bool Scene::diffuse_spheres_scene()
     m_renderables.push_back(model_sphere_15);
 
     /// SCENE LIGHTS
-    float light_mult = 10.0f;
+    float light_mult = 1.0f;
     glm::vec3 light_dir = glm::normalize(glm::vec3(1.0f, -0.08748866352f, 0.0f));   // 1, tg(2),0 === 85deg inclination
     Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
     DirLight* dir_light = new DirLight(light_dir, spectrum_D65, light_mult);
     /// TODO: Set correctly the dir light direction !!!! (rotation: X = 0, Y = 85, Z = 180)
     m_scene_lights.push_back(dir_light);
+
+    // float att_c = 1.0f;
+    // float att_l = 0.1f;
+    // float att_q = 0.2f;
+    // PointLight* pl_1 = new PointLight(glm::vec3(8, 1, 0), spectrum_D65, light_mult, att_c, att_l, att_q);
+    // m_scene_lights.push_back(pl_1);
 
     generate_emission_tex_array();      // needs to be called after placing all the lights in the scene
     /// FINALLY, SCENE VOLUME (FOG)

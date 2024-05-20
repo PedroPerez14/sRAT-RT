@@ -77,13 +77,52 @@ const mat3 RGB_TO_XYZ_M = mat3(
     0.0193, 0.1192, 0.9505
 );
 
-const float PI = 3.14159265359;                             // pi
+const float PI = 3.14159265359;         // pi
+
+const vec3 L_amb_rgb = vec3(1.0,1.0, 1.0);
+const float L_amb_spec = 1.0;
 
 ////////////////////////////////////// GLOBAL VARS //////////////////////////////////////
 
 int n_lights = 0;
 
 ///////////////////////////////////////// FUNCS /////////////////////////////////////////
+
+float ray_sphere_intersect(vec3 r0, vec3 rd, vec3 s0, float sr)
+{
+    // - r0: ray origin
+    // - rd: normalized ray direction
+    // - s0: sphere center
+    // - sr: sphere radius
+    // - Returns distance from r0 to first intersecion with sphere,
+    //   or -1.0 if no intersection.
+    float t = -1.0;
+    vec3 oc = s0 - r0;
+    float b = dot(oc, rd);
+    float c = dot(oc, oc) - (sr * sr);
+
+    //ray outside, pointing the other direction
+    if (c > 0.0f && b <= 0.0f) {
+		return -1.0;
+	}
+
+    float disc = b * b - c;
+
+    if(disc <= 0.0f) //If negative, no need to keep computing next steps
+    {
+        return -1.0;
+    }
+
+    if(c > 0.0f)
+    {
+        t = b - sqrt(disc);
+    }
+    else{
+        t = b + sqrt(disc);
+    }
+	
+    return t;
+}
 
 float S(vec3 coeffs, float wl)
 {
@@ -313,6 +352,21 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
             L = normalize(-l.direction);
             H = normalize(V + L);
             att = 1.0;
+            if(enable_fog)
+            {
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                
+                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                if (dist_dir_light == -1.0)
+                {
+                    dist_dir_light = 1.0;
+                }
+                att *= exp(-vol_sigma_t_spec * dist_dir_light);
+            }
         }
         else    // point light
         {
@@ -320,6 +374,17 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
             H = normalize(V + L);  // halfway vector
             float distance = length(l.position.xyz - world_pos);
             att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
+            if(enable_fog)
+            {
+                /// TODO: Needs testing!
+                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                
+                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                att *= exp(-vol_sigma_t_spec * distance);
+            }
         }
         // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
         float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
@@ -366,12 +431,38 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
         {
             L = normalize(-l.direction);
             att = 1.0;
+            if(enable_fog)
+            {
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                
+                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                if (dist_dir_light == -1.0)
+                {
+                    dist_dir_light = 1.0;
+                }
+                att *= exp(-vol_sigma_t_spec * dist_dir_light);
+            }
         }
         else    // point light
         {
             L = normalize(l.position.xyz - world_pos);
             float distance = abs(length(l.position.xyz - world_pos));
             att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
+            if(enable_fog)
+            {
+                /// TODO: Needs testing!
+                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                
+                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                att *= exp(-vol_sigma_t_spec * distance);
+            }
         }
         // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
         float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
@@ -388,7 +479,6 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
 /// INFO: RGB Version
 vec3 pbr_material_shading(vec3 world_pos)
 {
-    
     // Decode values from the framebuffer textures
     vec4 _metallic_tex_sample = texture(framebuffer_tex2, fTexcoords).rgba;
     vec4 _albedo_tex_sample = texture(framebuffer_tex3, fTexcoords).rgba;
@@ -415,21 +505,41 @@ vec3 pbr_material_shading(vec3 world_pos)
     {
         vec3 L = vec3(0,0,0);           // assign values later
         vec3 H = vec3(0,0,0);           // assign values later
-        float att = 1.0;
+        vec3 att = vec3(1.0);
 
         Light l = scene_lights[i];
         if(l.position.w == 0)   // dir light
         {
             L = normalize(-l.direction);
             H = normalize(V + L);
-            att = 1.0;
+            vec3 att = vec3(1.0);
+            if(enable_fog)
+            {
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+                vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+                vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+                if (dist_dir_light == -1.0)
+                {
+                    dist_dir_light = 1.0;
+                }
+                att *= exp(-sigma_t_rgb * vec3(dist_dir_light));
+            }
         }
         else    // point light
         {
             L = normalize(l.position.xyz - world_pos);
             H = normalize(V + L);  // halfway vector
             float distance = length(l.position.xyz - world_pos);
-            att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
+            att = vec3(1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation));
+            if(enable_fog)
+            {
+                /// TODO: Work in progress!
+                vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+                vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+                vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+                att *= exp(-sigma_t_rgb * vec3(distance));
+            }
         }
         // per-light radiance
         vec3 radiance = l.emission_rgb * l.emission_mult * att;
@@ -470,21 +580,41 @@ vec3 diffuse_material_shading(vec3 world_pos)
     for(int i = 0; i < n_lights; i++)
     {
         vec3 L = vec3(0,0,0);           // assign values later
-        float att = 1.0;
+        vec3 att = vec3(1.0);
 
         Light l = scene_lights[i];
         if(l.position.w == 0)   // dir light
         {
             L = normalize(-l.direction);
-            att = 1.0;
+            att = vec3(1.0);
+            if(enable_fog)
+            {
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+                vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+                vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+                if (dist_dir_light == -1.0)
+                {
+                    dist_dir_light = 1.0;
+                }
+                att *= exp(-sigma_t_rgb * vec3(dist_dir_light));
+            }
         }
         else    // point light
         {
             L = normalize(l.position.xyz - world_pos);
             float distance = abs(length(l.position.xyz - world_pos));
-            att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
+            att = vec3(1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation));
+            if(enable_fog)
+            {
+                /// TODO: Work in progress!
+                vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+                vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+                vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+                att *= exp(-sigma_t_rgb * vec3(distance));
+            }
         }
-        vec3 radiance = l.emission_rgb.rgb;
+        vec3 radiance = l.emission_rgb.rgb * l.emission_mult;
 
         float n_dot_l = max(dot(N, L), 0.0);
         // Add to outgoing radiance Lo
@@ -589,8 +719,10 @@ void main()
                 {
                     z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
                 }
-                float f = exp((-vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
-                color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
+                // float f = exp((-vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
+                // color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
+                float exp_att = exp(-vol_sigma_t_spec * z_s);
+                color = (Lo * exp_att) + ((vol_albedo_spec / (4.0 * PI)) * L_amb_spec * (1.0 - exp_att));
             }
 
 
@@ -634,8 +766,10 @@ void main()
             {
                 z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
             }
-            vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
-            Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
+            // vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
+            // Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
+            vec3 exp_att = exp(-sigma_t_rgb * vec3(z_s));
+            Lo = (Lo * exp_att) + (albedo_rgb / vec3(4.0 * PI)) * L_amb_rgb * (1.0 - exp_att);
         }
 
         out_color = vec4(Lo, 1.0);

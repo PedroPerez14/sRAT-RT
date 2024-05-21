@@ -1,8 +1,8 @@
 #version 450 core
 
 #define MAX_NUM_LIGHTS 16                                   // let's not put too many lights or the shader will cry
-#define MAX_FOG_DISTANCE 100.0                              // Should this be an uniform variable? hmm
-
+#define MAX_FOG_DISTANCE 100.0                              // Should this be an uniform variable? hmm (or maybe the far plane dist)
+#define SCENE_BOUNDING_SPHERE_RADIUS 49.8                   // Needed to make dir lights work with fog (needs finetuning for every different scene)
 
 in vec2 fTexcoords;
 
@@ -79,6 +79,7 @@ const mat3 RGB_TO_XYZ_M = mat3(
 
 const float PI = 3.14159265359;         // pi
 
+/// TODO: Should this change¿??¿?¿?¿?¡
 const vec3 L_amb_rgb = vec3(1.0,1.0, 1.0);
 const float L_amb_spec = 1.0;
 
@@ -354,7 +355,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
             att = 1.0;
             if(enable_fog)
             {
-                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
                 float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
                 vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
                 
@@ -433,7 +434,7 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
             att = 1.0;
             if(enable_fog)
             {
-                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
                 float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
                 vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
                 
@@ -515,7 +516,7 @@ vec3 pbr_material_shading(vec3 world_pos)
             vec3 att = vec3(1.0);
             if(enable_fog)
             {
-                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
                 vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
                 vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
                 vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
@@ -523,7 +524,7 @@ vec3 pbr_material_shading(vec3 world_pos)
                 {
                     dist_dir_light = 1.0;
                 }
-                att *= exp(-sigma_t_rgb * vec3(dist_dir_light));
+                att *= exp(-sigma_t_rgb * vec3(dist_dir_light, dist_dir_light, dist_dir_light));
             }
         }
         else    // point light
@@ -589,7 +590,7 @@ vec3 diffuse_material_shading(vec3 world_pos)
             att = vec3(1.0);
             if(enable_fog)
             {
-                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(-l.direction), vec3(0.0), 49.8);
+                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
                 vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
                 vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
                 vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
@@ -597,7 +598,7 @@ vec3 diffuse_material_shading(vec3 world_pos)
                 {
                     dist_dir_light = 1.0;
                 }
-                att *= exp(-sigma_t_rgb * vec3(dist_dir_light));
+                att *= exp(-sigma_t_rgb * vec3(dist_dir_light, dist_dir_light, dist_dir_light));
             }
         }
         else    // point light
@@ -769,7 +770,7 @@ void main()
             // vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
             // Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
             vec3 exp_att = exp(-sigma_t_rgb * vec3(z_s));
-            Lo = (Lo * exp_att) + (albedo_rgb / vec3(4.0 * PI)) * L_amb_rgb * (1.0 - exp_att);
+            Lo = (Lo * exp_att) + ((albedo_rgb / vec3(4.0 * PI)) * L_amb_rgb * (1.0 - exp_att));
         }
 
         out_color = vec4(Lo, 1.0);

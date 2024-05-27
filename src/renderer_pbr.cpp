@@ -40,9 +40,12 @@ RendererPBR::RendererPBR(App* app)
     gen_sampled_wls_tex1d();
     init_fullscreen_quad();                         // Finally, generate our full screen quad
 
-    m_illumination_multiplier = 10.0f;
+    m_illumination_multiplier = 1.0f;
     m_fog_sigma_a_mult = 1.0f;
     m_fog_sigma_s_mult = 1.0f;
+    jerlov_KD_mult = 1.0f;
+
+    water_depth = 5.0f;
 }
 
 void RendererPBR::render_scene(Scene* scene)
@@ -252,9 +255,11 @@ void RendererPBR::render_ui()
 
     if(m_enable_fog)
     {
-        ImGui::SeparatorText(" Fog Config: ");
+        ImGui::SeparatorText(" Jerlov Water Config: ");
         ImGui::SliderFloat("Absorption multiplier", &m_fog_sigma_a_mult, 0.0, 10.0);
         ImGui::SliderFloat("Scattering multiplier", &m_fog_sigma_s_mult, 0.0, 10.0);
+        ImGui::SliderFloat("KD multiplier", &jerlov_KD_mult, 0.0, 10.0);
+        ImGui::SliderFloat("Water depth", &water_depth, 0.0, 100.0);
     }
 
     ImGui::SeparatorText(" Other Options: ");
@@ -639,11 +644,13 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     m_deferred_lighting_pass_shader->setBool("enable_fog", m_enable_fog);
     m_deferred_lighting_pass_shader->setVec3("vol_sigma_s_rgb", g_vol->get_sigma_s_rgb());    // m^-1
     m_deferred_lighting_pass_shader->setVec3("vol_sigma_a_rgb", g_vol->get_sigma_a_rgb());    // m^-1
+    m_deferred_lighting_pass_shader->setVec3("vol_KD_rgb", g_vol->get_KD_rgb());              // unit?
     m_deferred_lighting_pass_shader->setFloat("wl_min_vol", g_vol->get_response_curve()->get_wl_min());
     m_deferred_lighting_pass_shader->setFloat("wl_max_vol", g_vol->get_response_curve()->get_wl_max());
     m_deferred_lighting_pass_shader->setFloat("sigma_a_mult", m_fog_sigma_a_mult);
     m_deferred_lighting_pass_shader->setFloat("sigma_s_mult", m_fog_sigma_s_mult);
-
+    m_deferred_lighting_pass_shader->setFloat("jerlov_KD_mult", jerlov_KD_mult);
+    m_deferred_lighting_pass_shader->setFloat("water_y_camera_offset", water_depth);
 
     m_deferred_lighting_pass_shader->setBool("convert_xyz_to_rgb", m_is_response_in_xyz);
     m_deferred_lighting_pass_shader->setInt("n_wls", m_num_wavelengths);

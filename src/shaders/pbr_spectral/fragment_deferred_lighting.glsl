@@ -43,7 +43,6 @@ struct Light                                                // Emission spectrum
     float wl_max;                                           // The highest wavelength for this light's radiance emission
 };
 
-
 uniform bool do_spectral_uplifting;                         // if true, spectral rendering, if false, rgb rendering
 uniform bool enable_fog;                                    // if true, render fog on top of the scene
 uniform bool convert_xyz_to_rgb;                            // in case our response curve is in xyz space
@@ -58,10 +57,14 @@ uniform int num_lights;                                     // real number of li
 uniform Light scene_lights[MAX_NUM_LIGHTS];                 // the lights in our scene
 uniform vec3 vol_sigma_s_rgb;                               // scattering coefficient of the scene's global volume (fog), in rgb (m^-1)
 uniform vec3 vol_sigma_a_rgb;                               // absorption coefficient of the scene's global volume (fog), in rgb (m^-1)
+uniform vec3 vol_KD_rgb;                                    // Jerlov water's KD coefficient, in RGB values
 uniform float wl_min_vol;                                   // the smallest wavelength in our volumetric data
 uniform float wl_max_vol;                                   // the biggest wavelength in out volumetric data
 uniform float sigma_a_mult;                                 // multiplier for our fog's absorption coefficient
 uniform float sigma_s_mult;                                 // multiplier for our fog's scattering coefficient
+
+uniform float jerlov_KD_mult = 1.0;                         // Multiplier for Jerlov's KD coefficients
+uniform float water_y_camera_offset = 200.0;                // Essentially, how deep's the camera
 
 
 //// SOME CONSTANT VARIABLES ////
@@ -79,7 +82,7 @@ const mat3 RGB_TO_XYZ_M = mat3(
 
 const float PI = 3.14159265359;         // pi
 
-/// TODO: Should this change¿??¿?¿?¿?¡
+/// TODO: Should this change
 const vec3 L_amb_rgb = vec3(1.0,1.0, 1.0);
 const float L_amb_spec = 1.0;
 
@@ -270,6 +273,68 @@ vec3 RGB_to_XYZ(vec3 rgb)
     return rgb * RGB_TO_XYZ_M;
 }
 
+////////////////////////////////// Ocean Scattering //////////////////////////////////
+
+float E(float E_0, float kD, float depth)
+{
+    return E_0 * exp(-kD * depth);
+}
+
+vec3 E(vec3 E_0, vec3 kD, vec3 depth)
+{
+    return E_0 * exp(-kD * depth);
+}
+
+vec3 ocean_volume_rgb(vec3 albedo, vec3 N, Light l, vec3 world_pos)
+{
+    vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+    vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+    vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+    vec3 _vol_KD_rgb = vol_KD_rgb * vec3(jerlov_KD_mult);
+    vec3 frag_to_cam = world_pos - cam_pos;
+    //float y_S = frag_to_cam.y + water_y_camera_offset;                      // Vertical dist from water to frag (offset relative to cam pos)
+    float y_S = (water_y_camera_offset - world_pos.y); //abs?
+
+    float y_W = -frag_to_cam.y;                                             // Vertical distance from frag to cam (invert sign??)
+
+    vec3 E_0 = l.emission_rgb * vec3(l.emission_mult);
+
+    vec3 radiance_to_frag = exp(-sigma_t_rgb * vec3(y_S)) * (E(E_0, _vol_KD_rgb, vec3(y_S)) * (albedo / vec3(PI)) * vec3(max(0.0, normalize(N).y)));
+    vec3 scattering = ( ( (sigma_s_rgb * E(E_0,  _vol_KD_rgb, vec3((water_y_camera_offset - cam_pos.y)))) ) / ( vec3(4.0 * PI) * (_vol_KD_rgb * vec3(y_W) - sigma_t_rgb ) ) ) 
+                        * ( exp((_vol_KD_rgb * vec3(y_W) - sigma_t_rgb) * vec3(abs(length(frag_to_cam))) ) - vec3(1.0));
+
+    vec3 Lo = scattering + radiance_to_frag;
+
+    return Lo;
+}
+
+float ocean_volume_spectral(float wavelength, float albedo, vec3 N, Light l, vec3 world_pos)
+{
+    float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+    vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+    
+    float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+    float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+    float vol_KD_spec = vol_sample_spec.b * jerlov_KD_mult;                 // jerlov KD
+    float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;                
+
+    vec3 frag_to_cam = world_pos - cam_pos;
+    //float y_S = frag_to_cam.y + water_y_camera_offset;                    // Vertical dist from water to frag (offset relative to cam pos)
+    float y_S = (water_y_camera_offset - world_pos.y); //abs?
+    float y_W = -frag_to_cam.y;                                             // Vertical distance from frag to cam (invert sign??)
+
+    float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
+    float E_0 = texture(l_em_spec, vec2(_l_emission_coord, float(0))).r * l.emission_mult;
+
+
+    float radiance_to_frag = exp(-vol_sigma_t_spec * y_S) * (E(E_0, vol_KD_spec, y_S) * (albedo / PI) * max(0.0, normalize(N).y));
+    float scattering = ( ( (vol_sigma_s_spec * E(E_0,  vol_KD_spec, (water_y_camera_offset - cam_pos.y))) ) / ( (4.0 * PI) * (vol_KD_spec * y_W - vol_sigma_t_spec ) ) ) 
+                        * ( exp((vol_KD_spec * y_W - vol_sigma_t_spec) * abs(length(frag_to_cam)) ) - 1.0);
+
+    float Lo = scattering + radiance_to_frag;
+    return Lo;
+}
+
 ///////////////////////////////////////// PBR /////////////////////////////////////////
 
 float ggx_dist(vec3 N, vec3 H, float roughness)
@@ -434,18 +499,30 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
             att = 1.0;
             if(enable_fog)
             {
-                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
-                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
-                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                // float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
+                // float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                // vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
                 
-                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
-                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
-                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
-                if (dist_dir_light == -1.0)
-                {
-                    dist_dir_light = 1.0;
-                }
-                att *= exp(-vol_sigma_t_spec * dist_dir_light);
+                // float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                // float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+                // float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                // if (dist_dir_light == -1.0)
+                // {
+                //     dist_dir_light = 1.0;
+                // }
+                // att *= exp(-vol_sigma_t_spec * dist_dir_light);
+
+                Lo = ocean_volume_spectral(wavelength, albedo, N, l, world_pos);
+
+            }
+            else
+            {
+                float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
+                float radiance = texture(l_em_spec, vec2(_l_emission_coord, float(i))).r * l.emission_mult * att;
+
+                float n_dot_l = max(dot(N, L), 0.0);
+                // Add to outgoing radiance Lo
+                Lo += (albedo / PI) * radiance * n_dot_l * att;
             }
         }
         else    // point light
@@ -453,25 +530,30 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
             L = normalize(l.position.xyz - world_pos);
             float distance = abs(length(l.position.xyz - world_pos));
             att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
-            if(enable_fog)
-            {
-                /// TODO: Needs testing!
-                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
-                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+            // if(enable_fog)
+            // {
+            //     /// TODO: Needs testing!
+            //     float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+            //     vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
                 
-                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
-                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
-                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
-                att *= exp(-vol_sigma_t_spec * distance);
+            //     float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+            //     float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+            //     float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+            //     att *= exp(-vol_sigma_t_spec * distance);
+            // }
+
+            /// TODO: Now we do Néstor's Eurographics approximation
+            if(!enable_fog)
+            {
+                float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
+                float radiance = texture(l_em_spec, vec2(_l_emission_coord, float(i))).r * l.emission_mult * att;
+
+                float n_dot_l = max(dot(N, L), 0.0);
+                // Add to outgoing radiance Lo
+                Lo += (albedo / PI) * radiance * n_dot_l * att;
             }
         }
-        // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] )
-        float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
-        float radiance = texture(l_em_spec, vec2(_l_emission_coord, float(i))).r * l.emission_mult * att;
-
-        float n_dot_l = max(dot(N, L), 0.0);
-        // Add to outgoing radiance Lo
-        Lo += (albedo / PI) * radiance * n_dot_l * att;
+        // per-light radiance (we assume wavelength is in range [l.wl_min, l-wl_max] ) 
     }
     float ambient = 0.0;    // In case I need to tune something
     return Lo + ambient;
@@ -590,15 +672,24 @@ vec3 diffuse_material_shading(vec3 world_pos)
             att = vec3(1.0);
             if(enable_fog)
             {
-                float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
-                vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
-                vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
-                vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
-                if (dist_dir_light == -1.0)
-                {
-                    dist_dir_light = 1.0;
-                }
-                att *= exp(-sigma_t_rgb * vec3(dist_dir_light, dist_dir_light, dist_dir_light));
+                // float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
+                // vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+                // vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+                // vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+                // if (dist_dir_light == -1.0)
+                // {
+                //     dist_dir_light = 1.0;
+                // }
+                // att *= exp(-sigma_t_rgb * vec3(dist_dir_light, dist_dir_light, dist_dir_light));
+                
+                Lo = ocean_volume_rgb(albedo, N, l, world_pos);
+            }
+            else
+            {
+                vec3 radiance = l.emission_rgb.rgb * l.emission_mult;
+                float n_dot_l = max(dot(N, L), 0.0);
+                // Add to outgoing radiance Lo
+                Lo += (albedo / PI) * radiance * n_dot_l * att;
             }
         }
         else    // point light
@@ -614,12 +705,14 @@ vec3 diffuse_material_shading(vec3 world_pos)
                 vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
                 att *= exp(-sigma_t_rgb * vec3(distance));
             }
+            else
+            {
+                vec3 radiance = l.emission_rgb.rgb * l.emission_mult;
+                float n_dot_l = max(dot(N, L), 0.0);
+                // Add to outgoing radiance Lo
+                Lo += (albedo / PI) * radiance * n_dot_l * att;
+            }
         }
-        vec3 radiance = l.emission_rgb.rgb * l.emission_mult;
-
-        float n_dot_l = max(dot(N, L), 0.0);
-        // Add to outgoing radiance Lo
-        Lo += (albedo / PI) * radiance * n_dot_l * att;
     }
     vec3 ambient = vec3(0.0, 0.0, 0.0);    // In case I need to tune something
     return Lo + ambient;

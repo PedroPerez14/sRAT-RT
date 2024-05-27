@@ -60,6 +60,9 @@ private:
     float m_illumination_multiplier;    // Debug variable for the UI
     float m_fog_sigma_a_mult;           // Debug variable for the UI
     float m_fog_sigma_s_mult;           // Debug variable for the UI
+    float jerlov_KD_mult;               // Debug variable for the UI
+
+    float water_depth;                  // For Jerlov's waters
     
     //// METHODS & FUNCS ////
     

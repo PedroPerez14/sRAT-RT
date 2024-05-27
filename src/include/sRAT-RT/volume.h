@@ -15,13 +15,15 @@ private:
     glm::vec3 sigma_s_rgb;
     glm::vec3 sigma_t_rgb;
     glm::vec3 albedo_rgb;
+    glm::vec3 KD_rgb;
 public:
-    Volume(std::string spectral_coeffs_file_fullpath, glm::vec3 sigma_a_rgb, glm::vec3 sigma_s_rgb);
+    Volume(std::string spectral_coeffs_file_fullpath, glm::vec3 sigma_a_rgb, glm::vec3 sigma_s_rgb, glm::vec3 KD_rgb);
     ~Volume();
 
     glm::vec3 get_sigma_s_rgb();
     glm::vec3 get_sigma_a_rgb();
     glm::vec3 get_sigma_t_rgb();
+    glm::vec3 get_KD_rgb();
     glm::vec3 get_albedo_rgb();
 
     ResponseCurve* get_response_curve();

@@ -456,7 +456,7 @@ bool Scene::diffuse_spheres_scene()
 
     generate_emission_tex_array();      // needs to be called after placing all the lights in the scene
     /// FINALLY, SCENE VOLUME (FOG)
-    global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004), glm::vec3(0.517, 0.112, 0.162)); // hardcoded hehehe
+    global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004), glm::vec3(0.471, 0.068, 0.023)); // hardcoded hehehe
 
     return true;
 }

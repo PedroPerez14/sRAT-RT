@@ -295,7 +295,7 @@ vec3 ocean_volume_rgb(vec3 albedo, vec3 N, Light l, vec3 world_pos)
     //float y_S = frag_to_cam.y + water_y_camera_offset;                      // Vertical dist from water to frag (offset relative to cam pos)
     float y_S = (water_y_camera_offset - world_pos.y); //abs?
 
-    float y_W = -frag_to_cam.y;                                             // Vertical distance from frag to cam (invert sign??)
+    float y_W = -(frag_to_cam.y / length(frag_to_cam));                                             // Vertical distance from frag to cam (invert sign??)
 
     vec3 E_0 = l.emission_rgb * vec3(l.emission_mult);
 
@@ -321,7 +321,7 @@ float ocean_volume_spectral(float wavelength, float albedo, vec3 N, Light l, vec
     vec3 frag_to_cam = world_pos - cam_pos;
     //float y_S = frag_to_cam.y + water_y_camera_offset;                    // Vertical dist from water to frag (offset relative to cam pos)
     float y_S = (water_y_camera_offset - world_pos.y); //abs?
-    float y_W = -frag_to_cam.y;                                             // Vertical distance from frag to cam (invert sign??)
+    float y_W = -(frag_to_cam.y / length(frag_to_cam));                   // Vertical distance from frag to cam (invert sign??)
 
     float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
     float E_0 = texture(l_em_spec, vec2(_l_emission_coord, float(0))).r * l.emission_mult;
@@ -800,23 +800,23 @@ void main()
             // Volume (fog) calculations
             if(enable_fog)
             {
-                float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
-                vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
+                // float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
+                // vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
                 
-                float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
-                float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
-                float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
-                float vol_albedo_spec = vol_sigma_s_spec / vol_sigma_t_spec;
+                // float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
+                // float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
+                // float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
+                // float vol_albedo_spec = vol_sigma_s_spec / vol_sigma_t_spec;
 
-                float z_s = MAX_FOG_DISTANCE;
-                if(length(world_pos) != 0.0)
-                {
-                    z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
-                }
-                // float f = exp((-vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
-                // color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
-                float exp_att = exp(-vol_sigma_t_spec * z_s);
-                color = (Lo * exp_att) + ((vol_albedo_spec / (4.0 * PI)) * L_amb_spec * (1.0 - exp_att));
+                // float z_s = MAX_FOG_DISTANCE;
+                // if(length(world_pos) != 0.0)
+                // {
+                //     z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
+                // }
+                // // float f = exp((-vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
+                // // color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
+                // float exp_att = exp(-vol_sigma_t_spec * z_s);
+                // color = (Lo * exp_att) + ((vol_albedo_spec / (4.0 * PI)) * L_amb_spec * (1.0 - exp_att));
             }
 
 
@@ -851,19 +851,19 @@ void main()
         // Volume (Jerlov's fog) calculations
         if(enable_fog)
         {
-            vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
-            vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
-            vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
-            vec3 albedo_rgb = sigma_s_rgb / sigma_t_rgb; 
-            float z_s = MAX_FOG_DISTANCE;
-            if(length(world_pos) != 0.0)
-            {
-                z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
-            }
-            // vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
-            // Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
-            vec3 exp_att = exp(-sigma_t_rgb * vec3(z_s));
-            Lo = (Lo * exp_att) + ((albedo_rgb / vec3(4.0 * PI)) * L_amb_rgb * (1.0 - exp_att));
+            // vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
+            // vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
+            // vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
+            // vec3 albedo_rgb = sigma_s_rgb / sigma_t_rgb; 
+            // float z_s = MAX_FOG_DISTANCE;
+            // if(length(world_pos) != 0.0)
+            // {
+            //     z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
+            // }
+            // // vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
+            // // Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
+            // vec3 exp_att = exp(-sigma_t_rgb * vec3(z_s));
+            // Lo = (Lo * exp_att) + ((albedo_rgb / vec3(4.0 * PI)) * L_amb_rgb * (1.0 - exp_att));
         }
 
         out_color = vec4(Lo, 1.0);

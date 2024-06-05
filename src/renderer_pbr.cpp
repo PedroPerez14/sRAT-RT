@@ -49,7 +49,7 @@ RendererPBR::RendererPBR(App* app)
 }
 
 void RendererPBR::render_scene(Scene* scene)
-{   
+{
     // Update the reference to the last rendered scene
     m_last_rendered_scene = scene;
     if(m_resample_wls)
@@ -75,12 +75,9 @@ void RendererPBR::render_scene(Scene* scene)
     m_pprocess_framebuffer->clear();
     m_deferred_framebuffer->bind();
     m_deferred_framebuffer->clear();
-    
+
     // First rendering pass, the Deferred Geometry Pass: Fill the GBuffer with data
     deferred_geometry_pass(scene);          // Render into the framebuffer
-    
-    m_deferred_framebuffer->unbind();
-    m_pprocess_framebuffer->bind();
 
     // Second pass, Deferred Shading: Use a giant shader to light all the scene at once
     deferred_lighting_pass(scene);          // Draw the scene at once to the postprocessing buffer
@@ -90,7 +87,7 @@ void RendererPBR::render_scene(Scene* scene)
     // Third pass, optional: Forward rendering for some objects that may need it (i.e area lights)
     //forward_pass(scene);                  // Also draws to gbuffer (should be a 2nd FBO) [EMPTY FOR NOW]
 
-    m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer  
+    m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer
 
     // Fourth pass, optional: Post processing, visual effects, tonemapping and gamma correction
     post_processing_pass(scene);            // Takes the postprocessing buffer as input
@@ -107,7 +104,7 @@ bool RendererPBR::SliderFloatWithSteps(const char* label, int* v, float v_min, f
 		display_format = "%d";
 
 	char text_buf[64] = {};
-    
+
 	ImFormatString(text_buf, IM_ARRAYSIZE(text_buf), display_format, *v);
 
 	// Map from [v_min,v_max] to [0,N]
@@ -153,7 +150,7 @@ void RendererPBR::main_menu_bar()
             if (ImGui::MenuItem("Paste", "CTRL+V")) {}
             ImGui::EndMenu();
         }
-        
+
         ImGui::EndMainMenuBar();
     }
 }
@@ -205,7 +202,7 @@ void RendererPBR::render_ui()
             if(m_wl_min > m_wl_max)
                 m_wl_max = m_wl_min;
         }
-            
+
         if(ImGui::SliderFloat("max_wl", &m_wl_max, 300, 860))
         {
             m_resample_wls = true;
@@ -221,12 +218,12 @@ void RendererPBR::render_ui()
             if(m_wl_max < m_wl_min)
                 m_wl_min = m_wl_max;
         }
-            
+
         if(ImGui::SliderInt("wl_sample_strat", &m_sampling_strat, 0, STRAT_COUNT - 1, m_wl_interval_strat_names[m_sampling_strat].c_str()))
         {
             m_resample_wls = true;
         }
-        
+
         if (Combo("response_curve", &m_selected_resp_curve, m_response_curve_names, m_response_curve_names.size()))
         {
             m_resample_wls = true;
@@ -292,7 +289,7 @@ void RendererPBR::init_fullscreen_quad()
 
 void RendererPBR::render_quad()
 {
-    glDisable(GL_DEPTH_TEST);                   // disable depth test so screen-space quad isn't discarded   
+    glDisable(GL_DEPTH_TEST);                   // disable depth test so screen-space quad isn't discarded
     glBindVertexArray(m_fullscreen_vao);
     GL_CHECK(glDrawArrays(GL_TRIANGLES, 0, 3)); // Vertices will be created in vertex shader
     glEnable(GL_DEPTH_TEST);                    // re-enable depth test
@@ -341,18 +338,18 @@ void RendererPBR::lut_textures_create(std::unordered_map<colorspace, RGB2Spec*>*
 
         (*m_lut_textures)[csp] = lut_tex_3d;
 
-        std::cout << "APP::STATUS::INIT::RENDERER::GEN_LUTs_AS_TEX3D: Copied LUT for color space " 
+        std::cout << "APP::STATUS::INIT::RENDERER::GEN_LUTs_AS_TEX3D: Copied LUT for color space "
         << colorspace_key << " with size " << m_lut_textures->at(csp).res << "x" << m_lut_textures->at(csp).res << "x" << m_lut_textures->at(csp).res
         << "\n Tex_IDS: " << m_lut_textures->at(csp).tex_ids[0] << ", " << m_lut_textures->at(csp).tex_ids[1] << ", " << m_lut_textures->at(csp).tex_ids[2]
         << std::endl;
     }
 }
 
-/// TODO: Should I make this return a bool or have 2 ref. bools 
+/// TODO: Should I make this return a bool or have 2 ref. bools
 ///     for the scene object shaders and the deferred pass one?
 void RendererPBR::reload_shaders()
 {
-    
+
     std::vector<RenderableObject*> _ros_scene = m_last_rendered_scene->get_renderables();
     int num_renderables = _ros_scene.size();
     int num_reloaded = 0;
@@ -369,11 +366,11 @@ void RendererPBR::reload_shaders()
     {
         m_deferred_lighting_pass_shader = new_shader;
         delete old_shader;
-        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Correctly reloaded the deferred lighting pass shader!" << std::endl; 
+        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Correctly reloaded the deferred lighting pass shader!" << std::endl;
     }
     else
     {
-        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Could not reload the deferred lighting pass shader!" << std::endl; 
+        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Could not reload the deferred lighting pass shader!" << std::endl;
     }
 
     old_shader = m_postprocess_pass_shader;
@@ -382,14 +379,14 @@ void RendererPBR::reload_shaders()
     {
         m_postprocess_pass_shader = new_shader;
         delete old_shader;
-        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Correctly reloaded the post-processing pass shader!" << std::endl; 
+        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Correctly reloaded the post-processing pass shader!" << std::endl;
     }
     else
     {
-        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Could not reload the post-processing pass shader!" << std::endl; 
+        std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Could not reload the post-processing pass shader!" << std::endl;
     }
 
-    std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Correctly reloaded " << num_reloaded 
+    std::cout << "APP::STATUS::RUNNING::RENDERER::INFO: Correctly reloaded " << num_reloaded
     << " / " << num_renderables << " material shaders for renderable objects in the scene!" << std::endl;
 }
 
@@ -428,7 +425,7 @@ void RendererPBR::check_wls_range(Scene* scene)
     float overall_min_max_wl = m_wl_max;        // the smallest max wl among emitters, chosen max wl, fog and response curve range
 
     // Compare against all the lights in the scene
-    
+
     for(Light* light : scene->get_lights())
     {
         Spectrum* spec = light->get_spectrum();
@@ -562,21 +559,33 @@ void RendererPBR::deferred_lighting_pass(Scene* scene)
     GL_CHECK(glActiveTexture(GL_TEXTURE6));
     GL_CHECK(glBindTexture(GL_TEXTURE_1D, scene->get_global_volume()->get_spectral_tex_id()));
 
-    // Framebuffer contents, 7..14 if additional textures are required by the material
+    // Depth buffer, 7
+
+    // std::cout << "DEFERRED FB DEPTH TEXTURE: " << m_deferred_framebuffer->getDepthTextureID() << std::endl;
+    // std::cout << "POSTPROCESS FB DEPTH TEXTURE: " << m_pprocess_framebuffer->getDepthTextureID() << std::endl;
+    GL_CHECK(glActiveTexture(GL_TEXTURE7));
+    GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getDepthTextureID()));
+    // GL_DEPTH_ATTACHMENT GL_DEPTH_COMPONENT
+    // Framebuffer contents, 8..14 if additional textures are required by the material
     for(int i = 0; i < FRAMEBUFFER_TEX_NUM; i++)
     {
-        GL_CHECK(glActiveTexture(GL_TEXTURE7 + i));
-        glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i));
+        GL_CHECK(glActiveTexture(GL_TEXTURE8 + i));
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_deferred_framebuffer->getTextureID(i)));
     }
-    
+
     /// Now, set the uniforms:
     set_deferred_lighting_shader_uniforms(scene);
+
+
+    // Unbind and bind the respective buffers
+    m_deferred_framebuffer->unbind();
+    m_pprocess_framebuffer->bind();
 
     // Finally, render the fullscreen quad
     render_quad();
 }
 
-// I just realized this could be the same method as deferred_geometry_pass 
+// I just realized this could be the same method as deferred_geometry_pass
 //      but just adding one more parameter for the pass we want to filter by
 void RendererPBR::forward_pass(Scene* scene)
 {
@@ -630,7 +639,7 @@ void RendererPBR::blit_depth_buffer(GLFrameBufferRGBA<FRAMEBUFFER_TEX_NUM>* orig
     glBlitFramebuffer(
     0, 0, _w, _h, 0, 0, _w, _h, GL_DEPTH_BUFFER_BIT, GL_NEAREST
     );
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);       
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
@@ -638,7 +647,8 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     m_deferred_lighting_pass_shader->use();
     ResponseCurve* rc = m_response_curves_render->at(m_response_curve_names.at(m_selected_resp_curve));
     Volume* g_vol = scene->get_global_volume();
-    
+    Camera* scene_cam = scene->get_camera();
+
     m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
 
     m_deferred_lighting_pass_shader->setBool("enable_fog", m_enable_fog);
@@ -660,14 +670,20 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     m_deferred_lighting_pass_shader->setFloat("wl_max_resp", rc->get_wl_max());
     m_deferred_lighting_pass_shader->setInt("res", 64);         // Don't touch, LUT related
     m_deferred_lighting_pass_shader->setInt("num_lights", scene->get_num_lights());
-    m_deferred_lighting_pass_shader->setVec3("cam_pos", scene->get_camera()->Position);
+    m_deferred_lighting_pass_shader->setVec3("cam_pos", scene_cam->Position);
+
+    m_deferred_lighting_pass_shader->setMat4("inv_proj_mat", glm::inverse(scene_cam->get_projection_matrix()));
+    m_deferred_lighting_pass_shader->setMat4("inv_view_mat", glm::inverse(scene_cam->get_view_matrix()));
+    m_deferred_lighting_pass_shader->setFloat("far_plane_dist", scene_cam->get_far());
+    m_deferred_lighting_pass_shader->setFloat("near_plane_dist", scene_cam->get_near());
+
 
     // now, set the lights in the scene
     std::vector<Light*> scene_lights = scene->get_lights();
     int i = 0;
     for(Light* light : scene_lights)
     {
-        // Don't look at this code, it's embarrasing 
+        // Don't look at this code, it's embarrasing
         // (I should consider 2 separate vectors, one for dir lights and another for point lights)
         if(light->get_light_type() == DIR_LIGHT)
         {

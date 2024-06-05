@@ -22,15 +22,16 @@ layout (binding = 3) uniform sampler1D tex_wavelengths;
 layout (binding = 4) uniform sampler1D resp_curve;
 layout (binding = 5) uniform sampler1DArray l_em_spec;      // array of 1D textures containing the spectral emission of every light in the scene
 layout (binding = 6) uniform sampler1D vol_sigma_a_s_spec;  // texture with absorption and scattering spectral coeffs (r and g channels), m^-1
+layout (binding = 7) uniform sampler2D depth_buffer_tex;    // TODO: Leave this here?
 /////////////////////////////////// FRAMEBUFFER BEGINS HERE ///////////////////////////////////
-layout (binding = 7)  uniform sampler2D framebuffer_tex1;   // pos + mat_id
-layout (binding = 8)  uniform sampler2D framebuffer_tex2;   // normal + ??? (1 float free for materials to use)
-layout (binding = 9)  uniform sampler2D framebuffer_tex3;   // albedo + ??? (1 float free for materials to use)
-layout (binding = 10) uniform sampler2D framebuffer_tex4;   // ambient occlusion
-layout (binding = 11) uniform sampler2D framebuffer_tex5;   // free for materials to use
-layout (binding = 12) uniform sampler2D framebuffer_tex6;   // free for materials to use
-layout (binding = 13) uniform sampler2D framebuffer_tex7;   // free for materials to use
-layout (binding = 14) uniform sampler2D framebuffer_tex8;   // free for materials to use
+layout (binding = 8)  uniform sampler2D framebuffer_tex1;   // pos + mat_id
+layout (binding = 9)  uniform sampler2D framebuffer_tex2;   // normal + ??? (1 float free for materials to use)
+layout (binding = 10) uniform sampler2D framebuffer_tex3;   // albedo + ??? (1 float free for materials to use)
+layout (binding = 11) uniform sampler2D framebuffer_tex4;   // ambient occlusion
+layout (binding = 12) uniform sampler2D framebuffer_tex5;   // free for materials to use
+layout (binding = 13) uniform sampler2D framebuffer_tex6;   // free for materials to use
+layout (binding = 14) uniform sampler2D framebuffer_tex7;   // free for materials to use
+layout (binding = 15) uniform sampler2D framebuffer_tex8;   // free for materials to use
 
 struct Light                                                // Emission spectrum has to be in a separate texture array :/
 {
@@ -66,6 +67,11 @@ uniform float sigma_s_mult;                                 // multiplier for ou
 uniform float jerlov_KD_mult = 1.0;                         // Multiplier for Jerlov's KD coefficients
 uniform float water_y_camera_offset = 200.0;                // Essentially, how deep's the camera
 
+uniform mat4 inv_proj_mat;                                  // We need it to compute the world position of a fragment (water rendering stuff)
+uniform mat4 inv_view_mat;                                  // We need it to compute the world position of a fragment (water rendering stuff)
+uniform float far_plane_dist;                               // Water rendering purposes, might be useful for other stuff I guess
+uniform float near_plane_dist;                              // Water rendering purposes, might be useful for other stuff
+// For getting the world position of a fragment we also need the gl_FragCoord variable! (or our uvs since this pass is a screen-quad one)
 
 //// SOME CONSTANT VARIABLES ////
 const mat3 XYZ_TO_RGB_M = mat3(
@@ -275,6 +281,22 @@ vec3 RGB_to_XYZ(vec3 rgb)
 
 ////////////////////////////////// Ocean Scattering //////////////////////////////////
 
+// This is supposed to get the world position from the depth buffer
+//   (the depth is not linearized! I think we don't have to)
+vec3 world_pos_from_depth(float depth) {
+    float z = depth * 2.0 - 1.0;
+
+    vec4 clipSpacePosition = vec4(fTexcoords * 2.0 - 1.0, z, 1.0);
+    vec4 viewSpacePosition = inv_proj_mat * clipSpacePosition;
+
+    // Perspective division
+    viewSpacePosition /= viewSpacePosition.w;
+
+    vec4 worldSpacePosition = inv_view_mat * viewSpacePosition;
+
+    return worldSpacePosition.xyz;
+}
+
 float E(float E_0, float kD, float depth)
 {
     return E_0 * exp(-kD * depth);
@@ -291,7 +313,8 @@ vec3 ocean_volume_rgb(vec3 albedo, vec3 N, Light l, vec3 world_pos)
     vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
     vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
     vec3 _vol_KD_rgb = vol_KD_rgb * vec3(jerlov_KD_mult);
-    vec3 frag_to_cam = world_pos - cam_pos;
+
+    vec3 frag_to_cam = cam_pos - world_pos;
     //float y_S = frag_to_cam.y + water_y_camera_offset;                      // Vertical dist from water to frag (offset relative to cam pos)
     float y_S = (water_y_camera_offset - world_pos.y); //abs?
 
@@ -318,7 +341,7 @@ float ocean_volume_spectral(float wavelength, float albedo, vec3 N, Light l, vec
     float vol_KD_spec = vol_sample_spec.b * jerlov_KD_mult;                 // jerlov KD
     float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;                
 
-    vec3 frag_to_cam = world_pos - cam_pos;
+    vec3 frag_to_cam = cam_pos - world_pos;
     //float y_S = frag_to_cam.y + water_y_camera_offset;                    // Vertical dist from water to frag (offset relative to cam pos)
     float y_S = (water_y_camera_offset - world_pos.y); //abs?
     float y_W = -(frag_to_cam.y / length(frag_to_cam));                   // Vertical distance from frag to cam (invert sign??)
@@ -499,21 +522,13 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
             att = 1.0;
             if(enable_fog)
             {
-                // float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
-                // float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
-                // vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
-                
-                // float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
-                // float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
-                // float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
-                // if (dist_dir_light == -1.0)
-                // {
-                //     dist_dir_light = 1.0;
-                // }
-                // att *= exp(-vol_sigma_t_spec * dist_dir_light);
+                float my_depth = texture(depth_buffer_tex, fTexcoords).r;
+                vec3 my_world_pos = world_pos_from_depth(my_depth);
 
-                Lo = ocean_volume_spectral(wavelength, albedo, N, l, world_pos);
+                debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
+                debug_2 = vec4(my_world_pos, 1.0);
 
+                Lo = ocean_volume_spectral(wavelength, albedo, N, l, my_world_pos);
             }
             else
             {
@@ -682,7 +697,13 @@ vec3 diffuse_material_shading(vec3 world_pos)
                 // }
                 // att *= exp(-sigma_t_rgb * vec3(dist_dir_light, dist_dir_light, dist_dir_light));
                 
-                Lo = ocean_volume_rgb(albedo, N, l, world_pos);
+                float my_depth = texture(depth_buffer_tex, fTexcoords).r;
+                vec3 my_world_pos = world_pos_from_depth(my_depth);
+
+                debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
+                debug_2 = vec4(my_world_pos, 1.0);
+
+                Lo = ocean_volume_rgb(albedo, N, l, my_world_pos);
             }
             else
             {
@@ -727,9 +748,26 @@ float material_lighting(int mat_id, vec3 world_pos, float wavelength, float albe
     // I have to put all the material IDs in a single file, 
     //      even id it's just for reference and readability
 
-    if(mat_id == 0) // debug material
+    if(mat_id == 1) // V O I D
     {
-        return 0.0f;
+        if(enable_fog)
+        {
+            
+            float my_depth = texture(depth_buffer_tex, fTexcoords).r;
+            vec3 my_world_pos = world_pos_from_depth(my_depth);
+            float albedo = 0.0;
+            Light l = scene_lights[0];
+            vec3 N = normalize(cam_pos - my_world_pos);
+
+            debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
+            debug_2 = vec4(my_world_pos, 1.0);
+
+            return ocean_volume_spectral(wavelength, albedo, N, l, my_world_pos);
+        }
+        else
+        {
+            return 0.0;
+        }
     }
     if(mat_id == 2) // pbr
     {
@@ -749,9 +787,26 @@ vec3 material_lighting(int mat_id, vec3 world_pos)
     // I have to put all the material IDs in a single file, 
     //      even id it's just for reference and readability
 
-    if(mat_id == 0) // debgug material
+    if(mat_id == 1) // V O I D
     {
-        return vec3(1.0, 0.0, 1.0);
+        if(enable_fog)
+        {
+            
+            float my_depth = texture(depth_buffer_tex, fTexcoords).r;
+            vec3 my_world_pos = world_pos_from_depth(my_depth);
+            vec3 albedo = vec3(0.0);
+            Light l = scene_lights[0];
+            vec3 N = normalize(cam_pos - my_world_pos);
+
+            debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
+            debug_2 = vec4(my_world_pos, 1.0);
+
+            return ocean_volume_rgb(albedo, N, l, my_world_pos);
+        }
+        else
+        {
+            return vec3(0.0);
+        }
     }
     if(mat_id == 2) // pbr
     {

@@ -30,8 +30,10 @@ private:
 
 
     /// TODO: Delete the test scenes at some point (and add a proper scene file loader!)
+    /// I should refactor this even if i'm going to delete it once i add a scene loader
     bool test_scene();
     bool diffuse_spheres_scene();
+    bool reef_scene();
 
 
 public:

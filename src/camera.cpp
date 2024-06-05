@@ -40,6 +40,7 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
     }
 
     // update Front, Right and Up Vectors using the updated Euler angles
+
     updateCameraVectors();
 }
 
@@ -49,8 +50,8 @@ void Camera::ProcessMouseScroll(float yoffset)
     Zoom -= (float)yoffset;
     if (Zoom < 1.0f)
         Zoom = 1.0f;
-    if (Zoom > 45.0f)
-        Zoom = 45.0f;
+    if (Zoom > 65.0f)
+        Zoom = 65.0f;
     std::cout << "FOV value: " << Zoom << std::endl;
 }
 
@@ -58,6 +59,16 @@ glm::mat4 Camera::get_projection_matrix()
 {
     glm::mat4 pers = glm::perspective(glm::radians(Zoom), (float)((float)cam_width / (float)cam_height), near_plane, far_plane);
     return pers;
+}
+
+float Camera::get_near()
+{
+    return near_plane;
+}
+
+float Camera::get_far()
+{
+    return far_plane;
 }
 
 // calculates the front vector from the Camera's (updated) Euler Angles

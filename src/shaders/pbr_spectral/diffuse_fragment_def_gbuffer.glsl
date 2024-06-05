@@ -2,6 +2,7 @@
 layout (location = 0) out vec4 gPosition;       //.a component is mat_id
 layout (location = 1) out vec4 gNormal;         //.a component is free
 layout (location = 2) out vec4 gAlbedo;         //.a component is free
+layout (location = 3) out vec4 gAO_free_free_depth;
 
 in vec3 FragPos;
 in vec2 TexCoords;
@@ -34,6 +35,7 @@ void main()
     vec3 map_normal = getNormalFromMap();
 
     // store the fragment position vector in the first gbuffer texture + mat_id
+
     gPosition.rgba = vec4(FragPos, mat_id);
     // also store the per-fragment normals into the gbuffer
     gNormal.rgba = vec4(map_normal, 1.0);

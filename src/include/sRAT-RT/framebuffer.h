@@ -16,7 +16,7 @@ class GLFrameBuffer {
     */
 
     GLuint m_frameBufferID;
-    GLuint m_depthBufferID;
+    GLuint m_depthTextureID;
     std::array<GLuint, N_TEXTURES> m_textureIDs;
 
     unsigned int m_width, m_height;
@@ -54,11 +54,26 @@ public:
 
         /// DEPTH ///
         // create a renderbuffer object for depth and stencil attachment (we won't be sampling these) 
-        glGenRenderbuffers(1, &m_depthBufferID); 
-        glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height); // use a single renderbuffer object for both a depth AND stencil buffer. 
-    
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthBufferID);	// now actually attach it 
+        
+        ///////////////////////////////////////////////////////////////////////////glGenRenderbuffers(1, &m_depthBufferID); 
+        glGenTextures(1, &m_depthTextureID);
+        glBindTexture(GL_TEXTURE_2D, m_depthTextureID);
+        GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        ///////////////////////////////////////////////////////////////////////////
+
+        std::cout << "SWPTH BUFFER ID: " << m_depthTextureID << std::endl; 
+        ///////////////////////////////////////////////////////////////////////////glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
+        ///////////////////////////////////////////////////////////////////////////glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height); // use a single renderbuffer object for both a depth AND stencil buffer. 
+        /////////////////////////////////////////////////////////////////////////// glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthBufferID);	// now actually attach it 
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthTextureID, 0);
+
         // finally check if framebuffer is complete
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Framebuffer not complete!" << std::endl;
@@ -88,6 +103,8 @@ public:
 
     GLuint getTextureID(size_t i) const { return m_textureIDs[i]; }
 
+    GLuint getDepthTextureID() const { return m_depthTextureID; }
+
     void bindTextures() const {
         for (size_t i = 0; i < N_TEXTURES; i++)
         {
@@ -112,8 +129,8 @@ public:
         {
             GL_CHECK(glBindTexture(GL_TEXTURE_2D, m_textureIDs[i]));
             GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, m_width, m_height, 0, FORMAT, GL_FLOAT, NULL));
-            glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
+            //////////////////////glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
+            //////////////////////glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
         }
     }
     

@@ -16,6 +16,7 @@ void main()
 {
     vec4 worldPos = model * vec4(aPos, 1.0);
     FragPos = worldPos.xyz; 
+    //TexCoords = aTexCoords * vec2(1.0, -1.0) + vec2(0.0, 1.0);
     TexCoords = aTexCoords;
     
     Normal = normal_mat * aNormal;

@@ -205,11 +205,11 @@ bool Scene::diffuse_spheres_scene()
     Texture normals_tex_sphere_1{0, 1, "normal_texture", "../resources/pbr_materials/diffuse_pbr/diffuse_pbr_normal.png"};
     textures_1.push_back(normals_tex_sphere_1);
     Texture metallic_tex_sphere_1{0, 2, "metallic_texture", "../resources/pbr_materials/diffuse_pbr/diffuse_pbr_metallic.png"};
-    textures_1.push_back(metallic_tex_sphere_1);
+    //textures_1.push_back(metallic_tex_sphere_1);
     Texture roughness_tex_sphere_1{0, 3, "roughness_texture", "../resources/pbr_materials/diffuse_pbr/diffuse_pbr_roughness.png"};
-    textures_1.push_back(roughness_tex_sphere_1);
+    //textures_1.push_back(roughness_tex_sphere_1);
     Texture ao_tex_sphere_1{0, 4, "ao_texture", "../resources/pbr_materials/diffuse_pbr/diffuse_pbr_ao.png"};
-    textures_1.push_back(ao_tex_sphere_1);
+    //textures_1.push_back(ao_tex_sphere_1);
 
     /// TEXTURES SPHERE 2 ///
     Texture albedo_tex_sphere_2{0, 0, "diff_texture", "../resources/pbr_materials/diffuse_pbr/albedo/diffuse_pbr_albedo_2_blue.png"};
@@ -462,5 +462,64 @@ bool Scene::diffuse_spheres_scene()
 }
 
 
+bool Scene::reef_scene()
+{
+    /// SCENE CAMERA
+    glm::vec3 dir_ = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(glm::normalize(glm::vec3(0.75f, -3.0f, -1.4f)), 0.0f));
+    glm::vec3 cam_pos = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(glm::vec3(0.2f, -2.4f, -0.45f), 1.0f));
+    float yaw_ = glm::degrees(asin(-dir_.y)) * -1.0f;
+    float pitch_ = glm::degrees(atan2(dir_.x , dir_.z));
+    camera = new Camera(glm::vec3(0.2f, -2.4f, -0.45f), glm::vec3(0.0f, 1.0f, 0.0f), yaw_, pitch_, 1920.0f, 1080.0f, 0.1f, 100.0f);    
+    //camera->updateCameraVectors();
+    //camera->Zoom = 35.98339608247006f; // 60 deg Xfov toYfov (see formula in my notebook!)
+    camera->Zoom = 60.0f;
+
+    /// SCENE MODELS (EACH NEEDS A MATERIAL WHICH NEEDS TEXTURES)
+    std::vector<Texture> textures_reef;
+
+    /// TEXTURES 1 ///
+    Texture albedo_tex;
+    albedo_tex.binding = 0;
+    albedo_tex.id = 0;
+    albedo_tex.path = "../resources/objects/reef/reef_model.jpg";
+    albedo_tex.type = "diff_texture";
+    textures_reef.push_back(albedo_tex);
+
+    Texture normals_tex;
+    normals_tex.binding = 1;
+    normals_tex.id = 0;
+    normals_tex.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_normal.png";    // ???
+    normals_tex.type = "normal_texture";
+    textures_reef.push_back(normals_tex);
+
+    char* path_vertex_diff = "../src/shaders/pbr_spectral/diffuse_vertex_def_gbuffer.glsl";
+    char* path_fragment_diff = "../src/shaders/pbr_spectral/diffuse_fragment_def_gbuffer.glsl";
+
+    DiffuseMaterial* reef_mat = new DiffuseMaterial(textures_reef, path_vertex_diff, path_fragment_diff);
+
+    Model* reef_model = new Model("../resources/objects/reef/reef_model.obj", reef_mat);                  //meshes are loaded automatically
+
+    reef_model->get_transform()->set_rot(glm::vec3(glm::radians(330.0f), glm::radians(0.0f), glm::radians(0.0f)));
+    reef_model->get_transform()->set_pos(glm::vec3(0.0f, -1.99f, 0.0f));
+    reef_model->get_transform()->set_scale(glm::vec3(1.0f, 1.0f, 1.0f));
+
+    m_renderables.push_back(reef_model);
+
+
+    /// SCENE LIGHTS
+    float light_mult = 10.0f;
+    glm::vec3 light_dir = glm::vec3(0.0f, -1.0f, 0.0f);
+    Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
+    
+    DirLight* dir_light = new DirLight(light_dir, spectrum_D65, light_mult);
+    m_scene_lights.push_back(dir_light);
+
+    generate_emission_tex_array();      // needs to be called after placing all the lights in the scene
+
+    /// FINALLY, SCENE VOLUME (FOG)
+    global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004), glm::vec3(0.517, 0.112, 0.162)); // hardcoded hehehe
+
+    return true;
+}
 
 #endif

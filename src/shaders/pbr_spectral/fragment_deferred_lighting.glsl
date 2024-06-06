@@ -7,13 +7,13 @@
 in vec2 fTexcoords;
 
 layout (location = 0) out vec4 out_color;
-layout (location = 1) out vec4 debug_1;                     // free for debugging purposes
-layout (location = 2) out vec4 debug_2;                     // free for debugging purposes
-layout (location = 3) out vec4 debug_3;                     // free for debugging purposes
-layout (location = 4) out vec4 debug_4;                     // free for debugging purposes
-layout (location = 5) out vec4 debug_5;                     // free for debugging purposes
-layout (location = 6) out vec4 debug_6;                     // free for debugging purposes
-layout (location = 7) out vec4 debug_7;                     // free for debugging purposes
+layout (location = 1) out vec4 fb_out_1;                     // Will be RGB output if we are computing CIE Delta-E 2000
+layout (location = 2) out vec4 fb_out_2;                     // Will be Spectral output if we are computing CIE Delta-E 2000
+layout (location = 3) out vec4 fb_out_3;                     // free for debugging purposes
+layout (location = 4) out vec4 fb_out_4;                     // free for debugging purposes
+layout (location = 5) out vec4 fb_out_5;                     // free for debugging purposes
+layout (location = 6) out vec4 fb_out_6;                     // free for debugging purposes
+layout (location = 7) out vec4 fb_out_7;                     // free for debugging purposes
 
 layout (binding = 0) uniform sampler3D LUT_1;
 layout (binding = 1) uniform sampler3D LUT_2;
@@ -44,8 +44,9 @@ struct Light                                                // Emission spectrum
     float wl_max;                                           // The highest wavelength for this light's radiance emission
 };
 
-uniform bool do_spectral_uplifting;                         // if true, spectral rendering, if false, rgb rendering
+uniform int render_mode;                                    // Controls output: RGB (0), Spectral (1) or CIE Delta-E 2000 (2)
 uniform bool enable_fog;                                    // if true, render fog on top of the scene
+uniform bool shitty_uplifting;                              // Perform the worst spectral uplifting ever seen by man or woman
 uniform bool convert_xyz_to_rgb;                            // in case our response curve is in xyz space
 uniform int n_wls;                                          // number of wavelengths to sample for rendering
 uniform float wl_min;                                       // the min wavelength of our sampleable range
@@ -69,9 +70,6 @@ uniform float water_y_camera_offset = 200.0;                // Essentially, how 
 
 uniform mat4 inv_proj_mat;                                  // We need it to compute the world position of a fragment (water rendering stuff)
 uniform mat4 inv_view_mat;                                  // We need it to compute the world position of a fragment (water rendering stuff)
-uniform float far_plane_dist;                               // Water rendering purposes, might be useful for other stuff I guess
-uniform float near_plane_dist;                              // Water rendering purposes, might be useful for other stuff
-// For getting the world position of a fragment we also need the gl_FragCoord variable! (or our uvs since this pass is a screen-quad one)
 
 //// SOME CONSTANT VARIABLES ////
 const mat3 XYZ_TO_RGB_M = mat3(
@@ -259,6 +257,25 @@ vec3 fetch_uplifting_lut(vec3 rgb)
                  texture(LUT_3, _offset + dz + dy + dx  ).rgb * x1) * y1) * z1;
     }
     return coeffs;
+}
+
+
+// Our completely arbitrary wavelength thresholds for
+//  the shitty uplifting process
+const float wl_threshold_1 = 495.0;
+const float wl_threshold_2 = 570.0;
+float shitty_uplifting_func(vec3 albedo_tex_rgb, float wavelength)
+{
+    if(wavelength < wl_threshold_1)
+    {
+        return albedo_tex_rgb.b;
+    }
+    else if(wavelength < wl_threshold_2)
+    {
+        return albedo_tex_rgb.g;
+    }
+    //else
+    return albedo_tex_rgb.r;
 }
 
 float jakob_hanika_uplifting(vec3 albedo_tex_rgb, float wavelength)
@@ -525,9 +542,6 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
                 float my_depth = texture(depth_buffer_tex, fTexcoords).r;
                 vec3 my_world_pos = world_pos_from_depth(my_depth);
 
-                debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
-                debug_2 = vec4(my_world_pos, 1.0);
-
                 Lo = ocean_volume_spectral(wavelength, albedo, N, l, my_world_pos);
             }
             else
@@ -545,19 +559,8 @@ float diffuse_material_shading(vec3 world_pos, float wavelength, float albedo)
             L = normalize(l.position.xyz - world_pos);
             float distance = abs(length(l.position.xyz - world_pos));
             att = 1.0 / dot(vec3(1.0, distance, distance * distance), l.attenuation);
-            // if(enable_fog)
-            // {
-            //     /// TODO: Needs testing!
-            //     float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
-            //     vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
-                
-            //     float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
-            //     float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
-            //     float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
-            //     att *= exp(-vol_sigma_t_spec * distance);
-            // }
 
-            /// TODO: Now we do Néstor's Eurographics approximation
+            /// TODO: Now we should do Néstor's Eurographics approximation
             if(!enable_fog)
             {
                 float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
@@ -687,21 +690,8 @@ vec3 diffuse_material_shading(vec3 world_pos)
             att = vec3(1.0);
             if(enable_fog)
             {
-                // float dist_dir_light = ray_sphere_intersect(world_pos, normalize(L), vec3(0.0), SCENE_BOUNDING_SPHERE_RADIUS);
-                // vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
-                // vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
-                // vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
-                // if (dist_dir_light == -1.0)
-                // {
-                //     dist_dir_light = 1.0;
-                // }
-                // att *= exp(-sigma_t_rgb * vec3(dist_dir_light, dist_dir_light, dist_dir_light));
-                
                 float my_depth = texture(depth_buffer_tex, fTexcoords).r;
                 vec3 my_world_pos = world_pos_from_depth(my_depth);
-
-                debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
-                debug_2 = vec4(my_world_pos, 1.0);
 
                 Lo = ocean_volume_rgb(albedo, N, l, my_world_pos);
             }
@@ -759,9 +749,6 @@ float material_lighting(int mat_id, vec3 world_pos, float wavelength, float albe
             Light l = scene_lights[0];
             vec3 N = normalize(cam_pos - my_world_pos);
 
-            debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
-            debug_2 = vec4(my_world_pos, 1.0);
-
             return ocean_volume_spectral(wavelength, albedo, N, l, my_world_pos);
         }
         else
@@ -798,9 +785,6 @@ vec3 material_lighting(int mat_id, vec3 world_pos)
             Light l = scene_lights[0];
             vec3 N = normalize(cam_pos - my_world_pos);
 
-            debug_1 = vec4(my_depth, my_depth, my_depth, 1.0);
-            debug_2 = vec4(my_world_pos, 1.0);
-
             return ocean_volume_rgb(albedo, N, l, my_world_pos);
         }
         else
@@ -833,7 +817,7 @@ void main()
     vec3 world_pos = fb_1_read.rgb;
     int mat_id = int(fb_1_read.a);
 
-    if(do_spectral_uplifting)
+    if(render_mode == 1 || render_mode == 2)
     {
         // For all the chosen wavelengths
         vec4 final_xyz_color = vec4(0.0, 0.0, 0.0, 0.0);
@@ -845,35 +829,18 @@ void main()
             // Get the currently sampled wl (from the texture we stored them in)
             float wavelength = texture(tex_wavelengths, (float(i) / float(n_wls))).r;
             // Perform the uplifting step for our rgb color:
-            float albedo_spectral_response = jakob_hanika_uplifting(albedo_tex_rgb, wavelength);
+            float albedo_spectral_response = 0.0;
+            if(shitty_uplifting)
+            {
+                albedo_spectral_response = shitty_uplifting_func(albedo_tex_rgb, wavelength);
+            }
+            else
+            {
+                albedo_spectral_response = jakob_hanika_uplifting(albedo_tex_rgb, wavelength);
+            }
 
             // Actual material calculations for lighting
             float Lo = material_lighting(mat_id, world_pos, wavelength, albedo_spectral_response);
-            
-            float color = Lo;           // if we have fog, this var's value will change
-
-            // Volume (fog) calculations
-            if(enable_fog)
-            {
-                // float wl_sample_uv = (wavelength - wl_min_vol) / (wl_max_vol - wl_min_vol);
-                // vec3 vol_sample_spec = texture(vol_sigma_a_s_spec, wl_sample_uv).rgb;   // Kd (unused) is .b
-                
-                // float vol_sigma_a_spec = vol_sample_spec.r * sigma_a_mult;              // sigma_a is .r
-                // float vol_sigma_s_spec = vol_sample_spec.g * sigma_s_mult;              // sigma_s is .g
-                // float vol_sigma_t_spec = vol_sigma_a_spec + vol_sigma_s_spec;
-                // float vol_albedo_spec = vol_sigma_s_spec / vol_sigma_t_spec;
-
-                // float z_s = MAX_FOG_DISTANCE;
-                // if(length(world_pos) != 0.0)
-                // {
-                //     z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
-                // }
-                // // float f = exp((-vol_sigma_t_spec * z_s)) + (exp(-vol_sigma_s_spec * z_s) / (4.0 * PI));
-                // // color = (Lo * f) + (1.0 - f) * vol_albedo_spec;
-                // float exp_att = exp(-vol_sigma_t_spec * z_s);
-                // color = (Lo * exp_att) + ((vol_albedo_spec / (4.0 * PI)) * L_amb_spec * (1.0 - exp_att));
-            }
-
 
             // Sensor response (tristimulus, can be XYZ or RGB)
             float wl_range = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
@@ -883,44 +850,32 @@ void main()
                 response_for_wl = RGB_to_XYZ(response_for_wl.rgb);
             }
             // Cumulative sum of responses for Riemann integration
-            final_xyz_color += vec4(vec3(color * response_for_wl), response_for_wl.g);
+            final_xyz_color += vec4(vec3(Lo * response_for_wl), response_for_wl.g);
         }
         // Riemann sum final step: Divide by number and size of steps
         final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * final_xyz_color);
 
         // Final color space conversion (gamma and tonemapping should be done in the postprocess step)
         vec3 out_rgb = XYZ_to_RGB(final_xyz_color.rgb / final_xyz_color.a);   // XYZ luminance Y normalization to 100 (or 1)
-        out_color = vec4(out_rgb, 1.0);
-        //out_color = vec4(normalize(texture(framebuffer_tex2, fTexcoords).rgb) * 0.5 + vec3(0.5), 1.0);
-        // vec3 _N = texture(framebuffer_tex2, fTexcoords).rgb;
-        // vec3 _L = normalize(-scene_lights[0].direction);
-        // float ndotl = dot(_N, _L);
-        //out_color = vec4(ndotl, ndotl, ndotl, 1.0);
+        
+        if(render_mode == 1)
+        {
+            // If spectral render, output only this
+            out_color = vec4(out_rgb, 1.0);
+        }
+        else // render_mode == 2
+        {
+            // If rendering CIE Delta-E 2000, put RGB in FB0 and spectral in FB1
+            fb_out_1 = vec4(out_rgb, 1.0);
+        }
     }
-    else
+    if(render_mode == 0 || render_mode == 2)
     {
         /// Render in RGB instead of spectrally
         // world_pos, mat_id are known 
         vec3 Lo = material_lighting(mat_id, world_pos); 
 
-        // Volume (Jerlov's fog) calculations
-        if(enable_fog)
-        {
-            // vec3 sigma_s_rgb = vol_sigma_s_rgb * vec3(sigma_s_mult);
-            // vec3 sigma_a_rgb = vol_sigma_a_rgb * vec3(sigma_a_mult);
-            // vec3 sigma_t_rgb = sigma_s_rgb + sigma_a_rgb;
-            // vec3 albedo_rgb = sigma_s_rgb / sigma_t_rgb; 
-            // float z_s = MAX_FOG_DISTANCE;
-            // if(length(world_pos) != 0.0)
-            // {
-            //     z_s = min(MAX_FOG_DISTANCE, abs(length(world_pos - cam_pos)));
-            // }
-            // // vec3 f = exp(-sigma_t_rgb * vec3(z_s)) + (exp(-sigma_s_rgb * vec3(z_s)) / vec3(4.0 * PI));
-            // // Lo = (Lo * f) + (vec3(1.0) - f) * albedo_rgb;
-            // vec3 exp_att = exp(-sigma_t_rgb * vec3(z_s));
-            // Lo = (Lo * exp_att) + ((albedo_rgb / vec3(4.0 * PI)) * L_amb_rgb * (1.0 - exp_att));
-        }
-
+        // In this case we don't have to output to a different texture, this one's fine
         out_color = vec4(Lo, 1.0);
     }
 }

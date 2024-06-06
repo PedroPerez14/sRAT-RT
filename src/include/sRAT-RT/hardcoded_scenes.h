@@ -465,12 +465,15 @@ bool Scene::diffuse_spheres_scene()
 bool Scene::reef_scene()
 {
     /// SCENE CAMERA
-    glm::vec3 dir_ = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(glm::normalize(glm::vec3(0.75f, -3.0f, -1.4f)), 0.0f));
-    glm::vec3 cam_pos = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(glm::vec3(0.2f, -2.4f, -0.45f), 1.0f));
-    float yaw_ = glm::degrees(asin(-dir_.y)) * -1.0f;
-    float pitch_ = glm::degrees(atan2(dir_.x , dir_.z));
-    camera = new Camera(glm::vec3(0.2f, -2.4f, -0.45f), glm::vec3(0.0f, 1.0f, 0.0f), yaw_, pitch_, 1920.0f, 1080.0f, 0.1f, 100.0f);    
-    //camera->updateCameraVectors();
+    //glm::vec3 dir_ = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(glm::normalize(glm::vec3(0.75f, -3.0f, -1.4f)), 0.0f));
+    //glm::vec3 cam_pos = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0, 1.0, 0.0)) * glm::vec4(glm::vec3(0.2f, -2.4f, -0.45f), 1.0f));
+    // float yaw_ = glm::degrees(asin(-dir_.y)) * -1.0f;
+    // float pitch_ = glm::degrees(atan2(dir_.x , dir_.z));
+    float yaw_ = 0.0f;
+    float pitch_ = 0.0f;
+    camera = new Camera(glm::vec3(0.2f, 0.4f, -0.45f), glm::vec3(0.0f, 1.0f, 0.0f), yaw_, pitch_, 1920.0f, 1080.0f, 0.1f, 100.0f); 
+    camera->LookAt(glm::vec3(0.75f, 0.0f, -1.40f));
+
     //camera->Zoom = 35.98339608247006f; // 60 deg Xfov toYfov (see formula in my notebook!)
     camera->Zoom = 60.0f;
 
@@ -499,15 +502,14 @@ bool Scene::reef_scene()
 
     Model* reef_model = new Model("../resources/objects/reef/reef_model.obj", reef_mat);                  //meshes are loaded automatically
 
-    reef_model->get_transform()->set_rot(glm::vec3(glm::radians(330.0f), glm::radians(0.0f), glm::radians(0.0f)));
-    reef_model->get_transform()->set_pos(glm::vec3(0.0f, -1.99f, 0.0f));
+    reef_model->get_transform()->set_rot(glm::vec3(glm::radians(-30.0f), glm::radians(0.0f), glm::radians(0.0f)));
+    reef_model->get_transform()->set_pos(glm::vec3(0.0f, 1.01f, 0.0f));
     reef_model->get_transform()->set_scale(glm::vec3(1.0f, 1.0f, 1.0f));
 
     m_renderables.push_back(reef_model);
 
-
     /// SCENE LIGHTS
-    float light_mult = 10.0f;
+    float light_mult = 3.14f;
     glm::vec3 light_dir = glm::vec3(0.0f, -1.0f, 0.0f);
     Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
     

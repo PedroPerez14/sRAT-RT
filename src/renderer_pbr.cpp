@@ -24,14 +24,15 @@ RendererPBR::RendererPBR(App* app)
     unsigned int _height = settings->get_window_height();
     m_deferred_framebuffer->init(_width, _height);
     m_pprocess_framebuffer->init(_width, _height);
-    lut_textures_create(m_app_ptr->get_look_up_tables());                         // Convert the LUTs from data to 3D textures
+    lut_textures_create(m_app_ptr->get_look_up_tables());                   // Convert the LUTs from data to 3D textures
     m_response_curves_render = m_app_ptr->get_response_curves();
     m_selected_resp_curve = 0;                                              // Would be much better if the def. curve was the CIE one
     populate_resp_curves_list();                                            // For UI purposes
     m_resample_wls = true;
     m_is_response_in_xyz = false;
-    m_do_spectral = true;
+    m_render_mode = (int)RENDER_MODE_SPECTRAL;                                   // 1 in int
     m_enable_fog = false;
+    m_shitty_uplifting = false;
     m_num_wavelengths = settings->get_num_wavelengths();
     m_wl_min = settings->get_wl_min();
     m_wl_max = settings->get_wl_max();
@@ -170,18 +171,15 @@ void RendererPBR::render_ui()
     ImGui::Begin("Config");
     ImGui::TextUnformatted(("sRAT-RT v" + m_app_version).c_str());
     ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
-    if(ImGui::Checkbox("Do spectral rendering", &m_do_spectral))
-    {
-        if(m_do_spectral)
-        {
-            m_resample_wls = true;
-        }
-    }
+    ImGui::SliderInt("render_mode", &m_render_mode, 0, RENDER_MODE_COUNT - 1, m_render_mode_names[m_render_mode].c_str());
 
     ImGui::Checkbox("THE FOG IS COMING", &m_enable_fog);
+    
 
-    if(m_do_spectral)
+    if(m_render_mode == RENDER_MODE_SPECTRAL || m_render_mode == RENDER_MODE_CIE_DELTA_E_2000)
     {
+        ImGui::Checkbox("SHITTY UPLIFTING", &m_shitty_uplifting);
+
         if(SliderFloatWithSteps("num_wavelengths ", &m_num_wavelengths, 4, 200, 4, "%d"))
         {
             m_resample_wls = true;
@@ -612,11 +610,14 @@ void RendererPBR::post_processing_pass(Scene* scene)
     //  after doing the postprocessing (tonemapping, etc.)
 
     m_postprocess_pass_shader->use();               // Use the shader
-    m_postprocess_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
+    m_postprocess_pass_shader->setInt("render_mode", m_render_mode);
 
     glActiveTexture(GL_TEXTURE0);         // Bind the texture
     glBindTexture(GL_TEXTURE_2D, m_pprocess_framebuffer->getTextureID(0));
 
+    glActiveTexture(GL_TEXTURE1);         // Bind the texture
+    glBindTexture(GL_TEXTURE_2D, m_pprocess_framebuffer->getTextureID(1));
+    
     render_quad();                                  // Render (to screen)
 }
 
@@ -649,9 +650,10 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
     Volume* g_vol = scene->get_global_volume();
     Camera* scene_cam = scene->get_camera();
 
-    m_deferred_lighting_pass_shader->setBool("do_spectral_uplifting", m_do_spectral);
+    m_deferred_lighting_pass_shader->setInt("render_mode", m_render_mode);
 
     m_deferred_lighting_pass_shader->setBool("enable_fog", m_enable_fog);
+    m_deferred_lighting_pass_shader->setBool("shitty_uplifting", m_shitty_uplifting);
     m_deferred_lighting_pass_shader->setVec3("vol_sigma_s_rgb", g_vol->get_sigma_s_rgb());    // m^-1
     m_deferred_lighting_pass_shader->setVec3("vol_sigma_a_rgb", g_vol->get_sigma_a_rgb());    // m^-1
     m_deferred_lighting_pass_shader->setVec3("vol_KD_rgb", g_vol->get_KD_rgb());              // unit?
@@ -674,8 +676,6 @@ void RendererPBR::set_deferred_lighting_shader_uniforms(Scene* scene)
 
     m_deferred_lighting_pass_shader->setMat4("inv_proj_mat", glm::inverse(scene_cam->get_projection_matrix()));
     m_deferred_lighting_pass_shader->setMat4("inv_view_mat", glm::inverse(scene_cam->get_view_matrix()));
-    m_deferred_lighting_pass_shader->setFloat("far_plane_dist", scene_cam->get_far());
-    m_deferred_lighting_pass_shader->setFloat("near_plane_dist", scene_cam->get_near());
 
 
     // now, set the lights in the scene

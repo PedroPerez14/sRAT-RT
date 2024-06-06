@@ -86,6 +86,8 @@ public:
     void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch);
     void ProcessMouseScroll(float yoffset);
 
+    void LookAt(glm::vec3 p);
+
     float get_near();
     float get_far();
     

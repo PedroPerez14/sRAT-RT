@@ -55,6 +55,17 @@ void Camera::ProcessMouseScroll(float yoffset)
     std::cout << "FOV value: " << Zoom << std::endl;
 }
 
+void Camera::LookAt(glm::vec3 p)
+{
+    glm::vec3 direction = (p - Position);
+    float length = glm::length(direction);
+    if (length < 0.001f) return; // Sanity check
+    direction /= length; // Normalization
+    Pitch = glm::degrees(asin(direction.y));
+    Yaw = glm::degrees(atan2(direction.z, direction.x));
+    updateCameraVectors();
+}
+
 glm::mat4 Camera::get_projection_matrix()
 {
     glm::mat4 pers = glm::perspective(glm::radians(Zoom), (float)((float)cam_width / (float)cam_height), near_plane, far_plane);

@@ -27,6 +27,9 @@ private:
         unsigned int tex_ids[3];        // LUT as opengl texture 3d, size NxNxN
         int res;                        // N
     };
+    const enum RenderMode { RENDER_MODE_RGB, RENDER_MODE_SPECTRAL, RENDER_MODE_CIE_DELTA_E_2000, RENDER_MODE_COUNT };
+    const std::string m_render_mode_names[RENDER_MODE_COUNT] = { "RGB", "Spectral", "CIE Delta-E 2000" };
+    
     const enum WavelengthIntervalStrategy {STRAT_EQUISPACED, STRAT_ALT1, STRAT_ALT2, STRAT_COUNT};
     const std::string m_wl_interval_strat_names[STRAT_COUNT] = { "Equispaced", "MAX_WL", "MIN_WL" };
     float* (RendererPBR::*m_wl_sampling_funcs[STRAT_COUNT])() = 
@@ -46,8 +49,9 @@ private:
     std::vector<std::string> m_response_curve_names;
     unsigned int m_fullscreen_vao;
     unsigned int m_sampled_wls_tex_id;
-    bool m_do_spectral;                 // if false, we will just render to rgb
-    bool m_enable_fog;                  // quick zbuffer fog rendered on top of everything else
+    int m_render_mode;                  // 0 = RGB, 1 = Spectral, 2 = CIE Delta-E 2000 between RGB and Spectral
+    bool m_enable_fog;                  // fog (isotropic jerlov I water) with spectral behavior
+    bool m_shitty_uplifting;
     bool m_resample_wls;                // true if we need to resample the wavelengths that we'll use for our computation
     bool m_is_response_in_xyz;          // if true, the response curve will be treated as in xyz space, otherwise, rgb
     bool m_resize_flag;                 // true if we resized the window in the last frame, to know if we need to resize the camera

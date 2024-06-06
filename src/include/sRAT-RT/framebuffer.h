@@ -132,6 +132,9 @@ public:
             //////////////////////glBindRenderbuffer(GL_RENDERBUFFER, m_depthBufferID); 
             //////////////////////glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_width, m_height);
         }
+        glBindTexture(GL_TEXTURE_2D, m_depthTextureID);
+        GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL));
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     
     bool isSameSize(GLuint w, GLuint h) const {

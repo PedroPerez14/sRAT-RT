@@ -66,7 +66,7 @@ void App::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void App::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if(!m_ignore_mouse_callback)
+    if(m_ignore_mouse_callback)
     {
         if (mouse_data.firstMouse || m_reset_mouse_mov_vars)
         {

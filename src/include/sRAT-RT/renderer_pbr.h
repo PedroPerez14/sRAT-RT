@@ -20,6 +20,9 @@ public:
     void render_ui();
     void handle_resize(int w, int h);
 
+    void take_screenshot();
+
+
 private:
     //// DEFINITIONS ////
     struct lut_as_tex3d
@@ -55,6 +58,7 @@ private:
     bool m_resample_wls;                // true if we need to resample the wavelengths that we'll use for our computation
     bool m_is_response_in_xyz;          // if true, the response curve will be treated as in xyz space, otherwise, rgb
     bool m_resize_flag;                 // true if we resized the window in the last frame, to know if we need to resize the camera
+    bool m_screenshot_flag;             // If true, the renderer will try to take a screenshot (in this case, after the deferred)
     int m_sampling_strat;
     int m_num_wavelengths;
     int m_selected_resp_curve = 0;

@@ -7,6 +7,7 @@
 #include <sRAT-RT/dir_light.h>
 #include <sRAT-RT/point_light.h>
 #include <sRAT-RT/renderer_pbr.h>
+#include <sRAT-RT/stb_image_write.h>
 
 
 RendererPBR::RendererPBR(App* app)
@@ -33,6 +34,7 @@ RendererPBR::RendererPBR(App* app)
     m_render_mode = (int)RENDER_MODE_SPECTRAL;                                   // 1 in int
     m_enable_fog = false;
     m_shitty_uplifting = false;
+    m_screenshot_flag = false;
     m_num_wavelengths = settings->get_num_wavelengths();
     m_wl_min = settings->get_wl_min();
     m_wl_max = settings->get_wl_max();
@@ -80,6 +82,10 @@ void RendererPBR::render_scene(Scene* scene)
     // First rendering pass, the Deferred Geometry Pass: Fill the GBuffer with data
     deferred_geometry_pass(scene);          // Render into the framebuffer
 
+    // Unbind and bind the respective buffers
+    m_deferred_framebuffer->unbind();
+    m_pprocess_framebuffer->bind();
+
     // Second pass, Deferred Shading: Use a giant shader to light all the scene at once
     deferred_lighting_pass(scene);          // Draw the scene at once to the postprocessing buffer
 
@@ -90,8 +96,39 @@ void RendererPBR::render_scene(Scene* scene)
 
     m_pprocess_framebuffer->unbind();       // The next pass will render directly into the screen buffer
 
+
     // Fourth pass, optional: Post processing, visual effects, tonemapping and gamma correction
     post_processing_pass(scene);            // Takes the postprocessing buffer as input
+
+    if(m_screenshot_flag)
+    {
+        //m_pprocess_framebuffer->bind();
+        std::cout << "Saving screenshot!" << std::endl;
+        unsigned int h = m_pprocess_framebuffer->getHeight();
+        unsigned int w = m_pprocess_framebuffer->getWidth();
+        float* data = new float[4 * w * h];
+        unsigned char* _data = new unsigned char[4 * w * h];
+        glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, data);
+
+        for(int i = 0; i < h; i++)              // row
+        {
+            for(int j = 0; j < w; j++)          // col
+            {
+                for(int k = 0; k < 4; k++)      // component
+                {
+                    int _i = (h-1) - i;
+                    _data[k + 4*j + 4*w*_i] = (unsigned char)(data[k + 4*j + 4*w*i] * 255.0f);
+                    // _data[i] = (unsigned char)(data[i] * 255.0f);   //KJHGASGFVEJ     
+                }
+            }
+        }
+
+        stbi_write_png("HOLACARACOLA.png", w, h, 4, _data, w * 4);
+        delete data;
+        delete _data;
+        m_screenshot_flag = false;
+    }
+
 }
 
 bool RendererPBR::Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items = -1)
@@ -275,6 +312,15 @@ void RendererPBR::handle_resize(int w, int h)
     std::cout << "RESIZE FRAMEBUFFERS! " << std::endl;
     m_resize_flag = true;
 }
+
+void RendererPBR::take_screenshot()
+{
+    if(!m_screenshot_flag)
+    {
+        m_screenshot_flag = true;
+    }
+}
+
 
 // This should be called only once during initialization, before rendering the scene
 void RendererPBR::init_fullscreen_quad()
@@ -573,11 +619,6 @@ void RendererPBR::deferred_lighting_pass(Scene* scene)
 
     /// Now, set the uniforms:
     set_deferred_lighting_shader_uniforms(scene);
-
-
-    // Unbind and bind the respective buffers
-    m_deferred_framebuffer->unbind();
-    m_pprocess_framebuffer->bind();
 
     // Finally, render the fullscreen quad
     render_quad();

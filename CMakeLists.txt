@@ -21,6 +21,7 @@ FetchContent_MakeAvailable(
         assimp
 )
 
+set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
@@ -40,6 +41,7 @@ add_executable(sRAT-RT
         src/include/tinydir/tinydir.h
         src/include/sRAT-RT/camera.h
         src/include/sRAT-RT/shader.h
+        src/include/sRAT-RT/stb_image_write.h
         src/include/sRAT-RT/stb_image.h
         src/include/sRAT-RT/mesh.h
         src/include/sRAT-RT/model.h
@@ -68,6 +70,7 @@ add_executable(sRAT-RT
 
         # Source files
         src/include/rgb2spec/rgb2spec.c
+        src/include/sRAT-RT/stb_image_write.cpp
         src/include/sRAT-RT/stb_image.cpp
         src/camera.cpp
         src/mesh.cpp

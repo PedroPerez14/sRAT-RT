@@ -234,7 +234,7 @@ void App::process_input(GLFWwindow* window, Camera* camera, float deltaTime)
 			glfwSetWindowShouldClose(window, true);
 		}
 
-        
+        // Move camera only if alt key is pressed
         if(glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
         {
             m_ignore_mouse_callback = true; // don't move camera
@@ -246,6 +246,12 @@ void App::process_input(GLFWwindow* window, Camera* camera, float deltaTime)
                 m_reset_mouse_mov_vars = true;
             }
             m_ignore_mouse_callback = false;
+        }
+
+        // Take a screenshot and save it
+        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        {
+            renderer->take_screenshot();
         }
 }
 

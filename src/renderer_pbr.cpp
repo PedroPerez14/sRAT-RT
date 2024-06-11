@@ -1,4 +1,7 @@
 #pragma once
+
+#include <chrono>
+
 #include <iomanip>
 #include <imgui.cpp>
 #include <imgui_impl_glfw.h>
@@ -118,17 +121,14 @@ void RendererPBR::render_scene(Scene* scene)
                 {
                     int _i = (h-1) - i;
                     _data[k + 4*j + 4*w*_i] = (unsigned char)(data[k + 4*j + 4*w*i] * 255.0f);
-                    // _data[i] = (unsigned char)(data[i] * 255.0f);   //KJHGASGFVEJ     
                 }
             }
         }
-
-        stbi_write_png("HOLACARACOLA.png", w, h, 4, _data, w * 4);
+        stbi_write_png("../screenshot.png", w, h, 4, _data, w * 4);
         delete data;
         delete _data;
         m_screenshot_flag = false;
     }
-
 }
 
 bool RendererPBR::Combo(const char* label, int* current_item, const std::vector<std::string>& items, int items_count, int height_in_items = -1)

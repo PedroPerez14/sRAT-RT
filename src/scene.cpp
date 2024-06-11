@@ -32,8 +32,8 @@ Scene::Scene(const std::string& scene_file_path)
     //             "../src/shaders/vertex_forward.glsl", "../src/shaders/fragment_forward.glsl");
         
     // bool wasd = diffuse_spheres_scene();
-    bool wasd = test_scene();
-    // bool wasd = reef_scene();
+    // bool wasd = test_scene();
+    bool wasd = reef_scene();
 
     if(wasd)
     {

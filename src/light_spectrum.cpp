@@ -3,6 +3,7 @@
 #include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <sRAT-RT/light_spectrum.h>
+#include <iostream>
 
 Spectrum::Spectrum(std::string spectrum_file, glm::vec3 resp_rgb = glm::vec3(1.0f,1.0f,1.0f))
 {
@@ -14,7 +15,7 @@ Spectrum::Spectrum(std::string spectrum_file, glm::vec3 resp_rgb = glm::vec3(1.0
     std::string line_wls, line_resp;
     std::string s_wl, s_resp;
     float wl, resp_r, resp_g, resp_b;   // It can be XYZ and not rgb, be careful
-    
+
     float max_resp = 0.0f;
 
     if(std::getline(f, line_wls) && std::getline(f, line_resp))
@@ -40,11 +41,12 @@ Spectrum::Spectrum(std::string spectrum_file, glm::vec3 resp_rgb = glm::vec3(1.0
             n_samples++;
         }
     }
-    
+
     // normalization step
     for(int i = 0; i < responses->size(); i++)
     {
         responses->at(i).response /= max_resp;
+        // std::cout << "NORMALIZATION SAMPLE " << i << " " << responses->at(i).wavelength << " " << responses->at(i).response << std::endl;
     }
     // gen_emission_tex_1d();          // sets the id class member
 }

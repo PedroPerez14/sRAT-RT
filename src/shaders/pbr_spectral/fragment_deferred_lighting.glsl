@@ -278,10 +278,10 @@ float shitty_uplifting_func(vec3 albedo_tex_rgb, float wavelength)
     return albedo_tex_rgb.r;
 }
 
-float jakob_hanika_uplifting(vec3 albedo_tex_rgb, float wavelength)
+float jakob_hanika_uplifting(vec3 coeffs, float wavelength)
 {
     // Fetch the coefficients from the 3D LUT with the rgb color
-    vec3 coeffs = fetch_uplifting_lut(albedo_tex_rgb);
+    //vec3 coeffs = fetch_uplifting_lut(albedo_tex_rgb);
     // Get the spectral response for our chosen wavelength
     return S(coeffs, wavelength);       // Sigmoid
 }
@@ -339,7 +339,7 @@ vec3 ocean_volume_rgb(vec3 albedo, vec3 N, Light l, vec3 world_pos)
 
     vec3 E_0 = l.emission_rgb * vec3(l.emission_mult);
 
-    vec3 radiance_to_frag = exp(-sigma_t_rgb * vec3(y_S)) * (E(E_0, _vol_KD_rgb, vec3(y_S)) * (albedo / vec3(PI)) * vec3(max(0.0, normalize(N).y)));
+    vec3 radiance_to_frag = exp(-sigma_t_rgb * vec3(y_S)) * (E(E_0, _vol_KD_rgb, vec3(y_S)) * (albedo / vec3(PI)) * vec3(max(0.7, normalize(N).y)));
     vec3 scattering = ( ( (sigma_s_rgb * E(E_0,  _vol_KD_rgb, vec3((water_y_camera_offset - cam_pos.y)))) ) / ( vec3(4.0 * PI) * (_vol_KD_rgb * vec3(y_W) - sigma_t_rgb ) ) ) 
                         * ( exp((_vol_KD_rgb * vec3(y_W) - sigma_t_rgb) * vec3(abs(length(frag_to_cam))) ) - vec3(1.0));
 
@@ -367,7 +367,7 @@ float ocean_volume_spectral(float wavelength, float albedo, vec3 N, Light l, vec
     float E_0 = texture(l_em_spec, vec2(_l_emission_coord, float(0))).r * l.emission_mult;
 
 
-    float radiance_to_frag = exp(-vol_sigma_t_spec * y_S) * (E(E_0, vol_KD_spec, y_S) * (albedo / PI) * max(0.0, normalize(N).y));
+    float radiance_to_frag = exp(-vol_sigma_t_spec * y_S) * (E(E_0, vol_KD_spec, y_S) * (albedo / PI) * max(0.7, normalize(N).y));
     float scattering = ( ( (vol_sigma_s_spec * E(E_0,  vol_KD_spec, (water_y_camera_offset - cam_pos.y))) ) / ( (4.0 * PI) * (vol_KD_spec * y_W - vol_sigma_t_spec ) ) ) 
                         * ( exp((vol_KD_spec * y_W - vol_sigma_t_spec) * abs(length(frag_to_cam)) ) - 1.0);
 
@@ -824,6 +824,14 @@ void main()
         // If we fetch the albedo tex here we save #wls-1 texture reads,
         //      at the cost of 1 extra param for every function that follows
         vec3 albedo_tex_rgb = pow(texture(framebuffer_tex3, fTexcoords).rgb, vec3(2.2));   // Fetch original rgb color from tex
+        
+        // Fetch the LUTs out of the loop FFS
+        if(!shitty_uplifting)
+        {
+            albedo_tex_rgb = fetch_uplifting_lut(albedo_tex_rgb);
+        }
+
+        
         for (int i = 0; i < n_wls; i++)
         {
             // Get the currently sampled wl (from the texture we stored them in)
@@ -850,7 +858,7 @@ void main()
                 response_for_wl = RGB_to_XYZ(response_for_wl.rgb);
             }
             // Cumulative sum of responses for Riemann integration
-            final_xyz_color += vec4(vec3(Lo * response_for_wl), response_for_wl.g);
+            final_xyz_color += vec4(vec3(Lo * response_for_wl.rgb), response_for_wl.g);
         }
         // Riemann sum final step: Divide by number and size of steps
         final_xyz_color = (( float(wl_max - wl_min) / float(n_wls) ) * final_xyz_color);
@@ -868,6 +876,11 @@ void main()
             // If rendering CIE Delta-E 2000, put RGB in FB0 and spectral in FB1
             fb_out_1 = vec4(out_rgb, 1.0);
         }
+        // float wavelength = mix(wl_min, wl_max, fTexcoords.x);
+        // Light l = scene_lights[0];
+        // float _l_emission_coord = (wavelength - l.wl_min) / (l.wl_max - l.wl_min);
+        // float xyz_coord = (wavelength - wl_min_resp) / (wl_max_resp - wl_min_resp);
+        // out_color = vec4(XYZ_to_RGB(texture(l_em_spec, vec2(_l_emission_coord, 0.0)).rrr * texture(resp_curve, xyz_coord).rgb), 1.0);
     }
     if(render_mode == 0 || render_mode == 2)
     {

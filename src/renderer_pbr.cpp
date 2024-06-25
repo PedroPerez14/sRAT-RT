@@ -210,14 +210,14 @@ void RendererPBR::render_ui()
     ImGui::SeparatorText(" SPECTRAL CONFIGURATION: ");
     ImGui::SliderInt("render_mode", &m_render_mode, 0, RENDER_MODE_COUNT - 1, m_render_mode_names[m_render_mode].c_str());
 
-    ImGui::Checkbox("THE FOG IS COMING", &m_enable_fog);
+    ImGui::Checkbox("ENABLE UNDERWATER", &m_enable_fog);
     
 
     if(m_render_mode == RENDER_MODE_SPECTRAL || m_render_mode == RENDER_MODE_CIE_DELTA_E_2000)
     {
-        ImGui::Checkbox("SHITTY UPLIFTING", &m_shitty_uplifting);
+        ImGui::Checkbox("NAIVE UPLIFTING", &m_shitty_uplifting);
 
-        if(SliderFloatWithSteps("num_wavelengths ", &m_num_wavelengths, 4, 200, 4, "%d"))
+        if(SliderFloatWithSteps("num_wavelengths ", &m_num_wavelengths, 4, 1000, 4, "%d"))
         {
             m_resample_wls = true;
         }

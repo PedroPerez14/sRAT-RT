@@ -422,8 +422,8 @@ bool Scene::diffuse_spheres_scene()
     Model* model_sphere_14 = new Model("../resources/objects/mitsuba_scene_spheres/meshes/Sphere14.obj", mat_sphere_14);
     Model* model_sphere_15 = new Model("../resources/objects/mitsuba_scene_spheres/meshes/Sphere15.obj", mat_sphere_15);
 
-    m_renderables.push_back(model_floor);
-    m_renderables.push_back(model_wall);
+    // m_renderables.push_back(model_floor);
+    // m_renderables.push_back(model_wall);
     m_renderables.push_back(model_sphere_1);
     m_renderables.push_back(model_sphere_2);
     m_renderables.push_back(model_sphere_3);
@@ -443,8 +443,9 @@ bool Scene::diffuse_spheres_scene()
     /// SCENE LIGHTS
     float light_mult = 1.0f;
     glm::vec3 light_dir = glm::normalize(glm::vec3(1.0f, -0.08748866352f, 0.0f));   // 1, tg(2),0 === 85deg inclination
-    Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
-    DirLight* dir_light = new DirLight(light_dir, spectrum_D65, light_mult);
+    //Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
+    Spectrum* spectrum_LED = new Spectrum("../resources/emitter_curves/spd_nestor.csv", glm::vec3(0.17142006f, 0.0f, 1.0f));
+    DirLight* dir_light = new DirLight(light_dir, spectrum_LED, light_mult);
     /// TODO: Set correctly the dir light direction !!!! (rotation: X = 0, Y = 85, Z = 180)
     m_scene_lights.push_back(dir_light);
 
@@ -520,6 +521,8 @@ bool Scene::reef_scene()
 
     /// FINALLY, SCENE VOLUME (FOG)
     global_volume = new Volume("../resources/volume_data/waterType_JerlovI_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004), glm::vec3(0.517, 0.112, 0.162)); // hardcoded hehehe
+    //global_volume = new Volume("../resources/volume_data/waterType_JerlovIII_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004), glm::vec3(0.517, 0.112, 0.162)); // hardcoded hehehe
+    //global_volume = new Volume("../resources/volume_data/waterType_Jerlov9C_properties.csv", glm::vec3(0.309, 0.053, 0.009), glm::vec3(0.001, 0.002, 0.004), glm::vec3(0.517, 0.112, 0.162)); // hardcoded hehehe
 
     return true;
 }

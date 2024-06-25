@@ -53,7 +53,7 @@ def transpose_csv(filename, output_filename=None):
 
         reader = csv.reader(f)
         # skip header
-        next(reader)
+        #next(reader)
         # transpose
         rows = zip(*reader)
         # write to file

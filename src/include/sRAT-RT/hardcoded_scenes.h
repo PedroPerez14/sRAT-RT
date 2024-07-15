@@ -77,7 +77,7 @@ bool Scene::test_scene()
     Texture albedo_tex_2;
     albedo_tex_2.binding = 0;
     albedo_tex_2.id = 0;
-    albedo_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_albedo.png";
+    albedo_tex_2.path = "../resources/pbr_materials/gold-scuffed-bl/gold-scuffed_basecolor-boosted.png";
     albedo_tex_2.type = "diff_texture";
     textures_2.push_back(albedo_tex_2);
 
@@ -91,14 +91,16 @@ bool Scene::test_scene()
     Texture metallic_tex_2;
     metallic_tex_2.binding = 2;
     metallic_tex_2.id = 0;
-    metallic_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_metallic.png";
+    // metallic_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_metallic.png";
+    metallic_tex_2.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_metallic.png";
     metallic_tex_2.type = "metallic_texture";
     textures_2.push_back(metallic_tex_2);
 
     Texture roughness_tex_2;
     roughness_tex_2.binding = 3;
     roughness_tex_2.id = 0;
-    roughness_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_roughness.png";
+    // roughness_tex_2.path = "../resources/pbr_materials/white-marble-bl/white-marble_roughness.png";
+    roughness_tex_2.path = "../resources/pbr_materials/used-stainless-steel2-bl/used-stainless-steel2_roughness.png";
     roughness_tex_2.type = "roughness_texture";
     textures_2.push_back(roughness_tex_2);
 
@@ -132,16 +134,16 @@ bool Scene::test_scene()
     Spectrum* spectrum_D65 = new Spectrum("../resources/emitter_curves/CIE_std_illum_D65.csv", glm::vec3(1.0f, 1.0f, 1.0f));
     Spectrum* spectrum_A = new Spectrum("../resources/emitter_curves/CIE_std_illum_A.csv", glm::vec3(1.0f, 0.68235294117f, 0.3725490196f));
     
-    //DirLight* dir_light = new DirLight(light_dir, spectrum_D65, light_mult);
-    //m_scene_lights.push_back(dir_light);
+    DirLight* dir_light = new DirLight(light_dir, spectrum_D65, light_mult);
+    m_scene_lights.push_back(dir_light);
     
     float att_c = 1.0f;
     float att_l = 0.7f;
     float att_q = 1.8f;
     PointLight* pl_1 = new PointLight(glm::vec3(-1, 0, 1), spectrum_D65, light_mult, att_c, att_l, att_q);
     PointLight* pl_2 = new PointLight(glm::vec3(1, 0, 1), spectrum_A, light_mult, att_c, att_l, att_q);
-    m_scene_lights.push_back(pl_1);
-    m_scene_lights.push_back(pl_2);
+    //m_scene_lights.push_back(pl_1);
+    //m_scene_lights.push_back(pl_2);
 
     generate_emission_tex_array();      // needs to be called after placing all the lights in the scene
 

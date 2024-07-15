@@ -7,3 +7,4 @@ resources/objects/*
 resources/response_curves/
 resources/pbr_materials/
 resources/pbr_materials/*
+resources/utils_and_scripts/cmp_images.ipynb

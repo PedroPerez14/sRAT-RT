@@ -1,5 +1,5 @@
 # Especifico una carpeta con dos subcarpetas (?) Mitsuba y sRAT-RT?
-# Saca el RMSE y el CIE delta E 2000
+# Saca el MAE y el CIE delta E 2000
 # Prepara unos cuantos plots
 
 # Plotea
@@ -44,7 +44,7 @@ def reef_scene_plots():
     path_renders_spectral = 'C:/Users/Pedro/Desktop/Universidad/TFM/OpenGL/sRAT-RT/resources/screenshots/screenshots_spec/'
     path_renders_shittyuplifting ='C:/Users/Pedro/Desktop/Universidad/TFM/OpenGL/sRAT-RT/resources/screenshots/screenshots_shittyuplift/'
     # Load images (mitsuba images are exr, the rest are png)
-    # Compute RMSE
+    # Compute MAE
     # Compute CIE deltaE 2000
     # Visualize CIE deltaE 2000 ???
     # Plot everything very nicely
@@ -95,9 +95,9 @@ def reef_scene_plots():
     delta_E_spec = [None] * len(images_mi)
     delta_E_shitty = [None] * len(images_mi)
 
-    RMSE_rgb = [None] * len(images_mi)
-    RMSE_spec = [None] * len(images_mi)
-    RMSE_shitty = [None] * len(images_mi)
+    MAE_rgb = [None] * len(images_mi)
+    MAE_spec = [None] * len(images_mi)
+    MAE_shitty = [None] * len(images_mi)
 
     diff_rgb = [None] * len(images_mi)
     diff_spec = [None] * len(images_mi)
@@ -106,7 +106,7 @@ def reef_scene_plots():
     # We are going to assume that the images are in depth order 
     # (1,5,10,20,50m) name them accordingly so the alphenumerical sorting orders them like that
 
-    do_rmse = False
+    do_MAE = False
     for i in range(len(images_mi)):
         im_mits[i] = cv2.imread(images_mi[i], cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
         im_mits[i] = cv2.cvtColor(im_mits[i], cv2.COLOR_BGR2RGB )
@@ -124,9 +124,13 @@ def reef_scene_plots():
         delta_E_spec[i] = colour.delta_E(im_mits_lab[i], im_spec_lab[i], 'CIE 2000')
         delta_E_shitty[i] = colour.delta_E(im_mits_lab[i], im_shitty_lab[i], 'CIE 2000')
         
-        RMSE_rgb[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_rgb[i] ) )
-        RMSE_spec[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_spec[i] ))
-        RMSE_shitty[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_shitty[i] ))
+        # MAE_rgb[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_rgb[i] ) )
+        # MAE_spec[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_spec[i] ))
+        # MAE_shitty[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_shitty[i] ))
+
+        MAE_rgb[i] = np.mean(np.abs(im_mits[i] - im_srat_rgb[i] ))
+        MAE_spec[i] = np.mean(np.abs(im_mits[i] - im_srat_spec[i] ))
+        MAE_shitty[i] = np.mean(np.abs(im_mits[i] - im_srat_shitty[i] ))
 
         diff_rgb[i] = np.mean(cv2.absdiff(im_mits[i] , im_srat_rgb[i] ), axis=2)
         diff_spec[i] = np.mean(cv2.absdiff(im_mits[i] , im_srat_spec[i] ), axis=2)
@@ -140,10 +144,7 @@ def reef_scene_plots():
     our_cmap = 'hot'
     rowtitles = []
     coltitles = ['depth=1m', 'depth=5m', 'depth=10m', 'depth=20m', 'depth=50m']
-    if(do_rmse):
-        rowtitles = ['Spectral Path Tracer (GT)', 'RGB (Ours)', 'Diff', 'Spectral Uplifting (Ours)', 'Diff', 'Poor Uplifting', 'Diff']
-    else:
-        rowtitles = ['Spectral Path Tracer (GT)', 'RGB (Ours)', 'Abs. difference', 'Spectral Uplifting (Ours)', 'Abs. difference', 'Poor Uplifting', 'Abs. difference']
+    rowtitles = ['Spectral \nPath Tracer (GT)', 'RGB', 'Absolute \ndifference', 'Spectral Uplifting \n(Ours)', 'Absolute \ndifference', 'Naive \nUpsampling', 'Absolute \ndifference']
 
     fig = plt.figure(1)
     gs = gridspec.GridSpec(nrows, ncols)
@@ -156,7 +157,7 @@ def reef_scene_plots():
                 sp.xaxis.set_label_position('top')
                 sp.set_xlabel(coltitles[j], fontsize=14)
                 if j == 0:
-                    sp.set_ylabel(rowtitles[i], fontsize =7)
+                    sp.set_ylabel(rowtitles[i], fontsize =12)
                 sp.set_yticks([])
                 sp.set_xticks([])
                 #else:
@@ -165,7 +166,7 @@ def reef_scene_plots():
             elif i == 1 and j != (ncols - 1):               # and j != 0
                 sp = fig.add_subplot(gs[i,j])
                 if j == 0:
-                    sp.set_ylabel(rowtitles[i], fontsize=7)
+                    sp.set_ylabel(rowtitles[i], fontsize=12)
                 sp.set_yticks([])
                 sp.set_xticks([])
                 #else:
@@ -178,18 +179,18 @@ def reef_scene_plots():
                     sp.set_axis_off()
                 else:
                     if j == 0:
-                        sp.set_ylabel(rowtitles[i], fontsize=7)
+                        sp.set_ylabel(rowtitles[i], fontsize=12)
                     sp.set_yticks([])
                     sp.set_xticks([])
                     #else:
                     last_im = sp.imshow(diff_rgb[j], cmap=our_cmap, vmin=0.0, vmax=50)
-                    txt = f"RMSE={RMSE_rgb[j]:.2f}\ndE2000={np.mean(delta_E_rgb[j]):.2f}"
+                    txt = f"MAE={MAE_rgb[j]:.2f}\ndE2000={np.mean(delta_E_rgb[j]):.2f}"
                     sp.text(0.95, 0.85, txt, bbox={'facecolor': 'white', 'pad': 2, 'alpha': 0.5, 'edgecolor': 'none'}, ha="right", va="top", fontsize=9, transform=sp.transAxes)
                     #sp.set_axis_off()
             elif i == 3 and j != (ncols - 1):
                 sp = fig.add_subplot(gs[i,j])
                 if j == 0:
-                    sp.set_ylabel(rowtitles[i], fontsize=7)
+                    sp.set_ylabel(rowtitles[i], fontsize=12)
                 sp.set_yticks([])
                 sp.set_xticks([])
                 #else:
@@ -202,18 +203,18 @@ def reef_scene_plots():
                     sp.set_axis_off()
                 else:  
                     if j == 0:
-                        sp.set_ylabel(rowtitles[i], fontsize=7)
+                        sp.set_ylabel(rowtitles[i], fontsize=12)
                     sp.set_yticks([])
                     sp.set_xticks([])
                     #else:
                     last_im = sp.imshow(diff_spec[j], cmap=our_cmap, vmin=0.0, vmax=50)
-                    txt = f"RMSE={RMSE_spec[j]:.2f}\ndE2000={np.mean(delta_E_spec[j]):.0f}"
+                    txt = f"MAE={MAE_spec[j]:.2f}\ndE2000={np.mean(delta_E_spec[j]):.0f}"
                     sp.text(0.95, 0.85, txt, bbox={'facecolor': 'white', 'pad': 2, 'alpha': 0.5, 'edgecolor': 'none'}, ha="right", va="top", fontsize=9, transform=sp.transAxes)
                     #sp.set_axis_off()
             elif i == 5 and j != (ncols - 1):
                 sp = fig.add_subplot(gs[i,j])
                 if j == 0:
-                    sp.set_ylabel(rowtitles[i], fontsize=7)
+                    sp.set_ylabel(rowtitles[i], fontsize=12)
                 sp.set_yticks([])
                 sp.set_xticks([])
                 #else:
@@ -226,12 +227,12 @@ def reef_scene_plots():
                     sp.set_axis_off()
                 else:
                     if j == 0:
-                        sp.set_ylabel(rowtitles[i], fontsize=7)
+                        sp.set_ylabel(rowtitles[i], fontsize=12)
                     sp.set_yticks([])
                     sp.set_xticks([])
                     #else:
                     last_im = sp.imshow(diff_shitty[j], cmap=our_cmap, vmin=0.0, vmax=50)
-                    txt = f"RMSE={RMSE_shitty[j]:.2f}\ndE2000={np.mean(delta_E_shitty[j]):.0f}"
+                    txt = f"MAE={MAE_shitty[j]:.2f}\ndE2000={np.mean(delta_E_shitty[j]):.0f}"
                     sp.text(0.95, 0.85, txt, bbox={'facecolor': 'white', 'pad': 2, 'alpha': 0.5, 'edgecolor': 'none'}, ha="right", va="top", fontsize=9, transform=sp.transAxes)
                     #sp.set_axis_off()
     fig.tight_layout()
@@ -244,12 +245,12 @@ def reef_scene_plots():
     mean_dE_spec = np.mean(delta_E_spec)
     mean_dE_shitty = np.mean(delta_E_shitty)
 
-    mean_rmse_rgb = np.mean(RMSE_rgb)
-    mean_rmse_spec = np.mean(RMSE_spec)
-    mean_rmse_shitty = np.mean(RMSE_shitty)
+    mean_MAE_rgb = np.mean(MAE_rgb)
+    mean_MAE_spec = np.mean(MAE_spec)
+    mean_MAE_shitty = np.mean(MAE_shitty)
     # print(mean_dE_rgb)
     plot_histogram(mean_dE_rgb, mean_dE_spec, mean_dE_shitty, color='blue', legend=["CIE dE 2000"], ylabel="Perceptual error scores")
-    plot_histogram(mean_rmse_rgb, mean_rmse_spec, mean_rmse_shitty, color='green', legend=["RMSE"], ylabel="Error scores")
+    plot_histogram(mean_MAE_rgb, mean_MAE_spec, mean_MAE_shitty, color='green', legend=["MAE"], ylabel="Error scores")
     plot_hist(im_srat_rgb, im_mits , coltitles, "Reef Scene, RGB Images")
     plot_hist(im_srat_spec, im_mits , coltitles, "Reef Scene, Naive Upsampling Images")
     plot_hist(im_srat_shitty, im_mits , coltitles, "Reef Scene, Spectral upsampling Images")
@@ -273,17 +274,20 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
     print("Images MI: ", images_mi, '\n')
 
     for file in os.listdir(path_renders_rgb):
-        images_rgb += [path_renders_rgb+file]
+        if(file[-4:] == ".png"):
+            images_rgb += [path_renders_rgb+file]
     images_rgb = sorted(images_rgb)
     print("Images RGB: ", images_rgb, '\n')
 
     for file in os.listdir(path_renders_spectral):
-        images_spec += [path_renders_spectral+file]
+        if(file[-4:] == ".png"):
+            images_spec += [path_renders_spectral+file]
     images_spec = sorted(images_spec)
     print("Images SPEC: ", images_spec, '\n')
 
     for file in os.listdir(path_renders_shittyuplifting):
-        images_shitty += [path_renders_shittyuplifting+file]
+        if(file[-4:] == ".png"):
+            images_shitty += [path_renders_shittyuplifting+file]
     images_shitty = sorted(images_shitty)
     print("Images SHITTY: ", images_shitty, '\n')
 
@@ -303,9 +307,9 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
     delta_E_spec = [None] * len(images_mi)
     delta_E_shitty = [None] * len(images_mi)
 
-    RMSE_rgb = [None] * len(images_mi)
-    RMSE_spec = [None] * len(images_mi)
-    RMSE_shitty = [None] * len(images_mi)
+    MAE_rgb = [None] * len(images_mi)
+    MAE_spec = [None] * len(images_mi)
+    MAE_shitty = [None] * len(images_mi)
 
     diff_rgb = [None] * len(images_mi)
     diff_spec = [None] * len(images_mi)
@@ -331,9 +335,13 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
         delta_E_spec[i] = colour.delta_E(im_mits_lab[i], im_spec_lab[i], 'CIE 2000')
         delta_E_shitty[i] = colour.delta_E(im_mits_lab[i], im_shitty_lab[i], 'CIE 2000')
         
-        RMSE_rgb[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_rgb[i] ) )
-        RMSE_spec[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_spec[i] ))
-        RMSE_shitty[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_shitty[i] ))
+        # MAE_rgb[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_rgb[i] ) )
+        # MAE_spec[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_spec[i] ))
+        # MAE_shitty[i] = math.sqrt(colour.utilities.metric_mse(im_mits[i] , im_srat_shitty[i] ))
+
+        MAE_rgb[i] = np.mean(np.abs(im_mits[i] - im_srat_rgb[i] ))
+        MAE_spec[i] = np.mean(np.abs(im_mits[i] - im_srat_spec[i] ))
+        MAE_shitty[i] = np.mean(np.abs(im_mits[i] - im_srat_shitty[i] ))
 
         diff_rgb[i] = np.mean(cv2.absdiff(im_mits[i] , im_srat_rgb[i] ), axis=2)
         diff_spec[i] = np.mean(cv2.absdiff(im_mits[i] , im_srat_spec[i] ), axis=2)
@@ -347,8 +355,8 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
     our_cmap = 'hot'
 
     coltitles = ['Our result', 'Image absolute difference']
-    #rowtitles = ['Spectral Path Tracer (GT)', 'RGB (Ours)', 'Abs. difference', 'Spectral Uplifting (Ours)', 'Abs. difference', 'Poor Uplifting', 'Abs. difference']
-    rowtitles = ['RGB (Ours)', 'Spectral Uplifting (Ours)', 'Naive Uplifting']
+    #rowtitles = ['Spectral Path Tracer (GT)', 'RGB', 'Abs. difference', 'Spectral Uplifting (Ours)', 'Abs. difference', 'Naive Upsampling', 'Abs. difference']
+    rowtitles = ['RGB', 'Spectral Uplifting (Ours)', 'Naive Upsampling']
 
     fig = plt.figure(1)
     gs = gridspec.GridSpec(nrows, ncols)
@@ -357,7 +365,7 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
 
     img_to_plot = None
     diff_to_plot = None
-    rmse_to_plot = None
+    MAE_to_plot = None
     dE_to_plot = None
     for i in range(nrows):
         for j in range(ncols):
@@ -365,19 +373,19 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
                 # img_to_plot --> rgb
                 img_to_plot = im_srat_rgb[0]
                 diff_to_plot = diff_rgb[0]
-                rmse_to_plot = RMSE_rgb[0]
+                MAE_to_plot = MAE_rgb[0]
                 dE_to_plot = delta_E_rgb[0]
             elif i == 1:    # Spectral
                 # img_to_plot --> spec
                 img_to_plot = im_srat_spec[0]
                 diff_to_plot = diff_spec[0]
-                rmse_to_plot = RMSE_spec[0]
+                MAE_to_plot = MAE_spec[0]
                 dE_to_plot = delta_E_spec[0]
             elif i == 2:    # Naive
                 # img_to_plot --> naive
                 img_to_plot = im_srat_shitty[0]
                 diff_to_plot = diff_shitty[0]
-                rmse_to_plot = RMSE_shitty[0]
+                MAE_to_plot = MAE_shitty[0]
                 dE_to_plot = delta_E_shitty[0]                    
 
             sp = fig.add_subplot(gs[i,j])
@@ -390,7 +398,7 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
                     sp.set_xlabel(coltitles[j], fontsize=14)
             elif j == 1:            # Plot diff
                 last_im = sp.imshow(diff_to_plot, cmap=our_cmap, vmin=0.0, vmax=our_vmax)
-                txt = f"RMSE={rmse_to_plot:.2f}\ndE2000={np.mean(dE_to_plot):.0f}"
+                txt = f"MAE={MAE_to_plot:.2f}\ndE2000={np.mean(dE_to_plot):.0f}"
                 sp.text(0.95, 0.2, txt, bbox={'facecolor': 'white', 'pad': 2, 'alpha': 0.5, 'edgecolor': 'none'}, ha="right", va="top", fontsize=14, transform=sp.transAxes)
                 if i == 2:
                     sp.set_xlabel(coltitles[j], fontsize=14)
@@ -408,11 +416,11 @@ def balls_scene_plots(path_renders_mitsuba, path_renders_rgb, path_renders_spect
     mean_dE_spec = np.mean(delta_E_spec)
     mean_dE_shitty = np.mean(delta_E_shitty)
 
-    mean_rmse_rgb = np.mean(RMSE_rgb)
-    mean_rmse_spec = np.mean(RMSE_spec)
-    mean_rmse_shitty = np.mean(RMSE_shitty)
+    mean_MAE_rgb = np.mean(MAE_rgb)
+    mean_MAE_spec = np.mean(MAE_spec)
+    mean_MAE_shitty = np.mean(MAE_shitty)
     plot_histogram(mean_dE_rgb, mean_dE_spec, mean_dE_shitty, color='blue', legend=["CIE dE 2000"], ylabel="Perceptual error scores")
-    plot_histogram(mean_rmse_rgb, mean_rmse_spec, mean_rmse_shitty, color='green', legend=["RMSE"], ylabel="Error scores")
+    plot_histogram(mean_MAE_rgb, mean_MAE_spec, mean_MAE_shitty, color='green', legend=["MAE"], ylabel="Error scores")
     plot_hist(im_srat_rgb, im_mits , coltitles, "Spheres D65 Scene, RGB Images")
     plot_hist(im_srat_spec, im_mits , coltitles, "Spheres D65 Scene, Naive Upsampling Images")
     plot_hist(im_srat_shitty, im_mits , coltitles, "Spheres D65 Scene, Spectral upsampling Images")
@@ -422,7 +430,7 @@ def addlabels(x,y):
         plt.text(i-0.2, y[i], "{:.4f}".format(y[i]))
 
 # TODO: Nestor's code
-#     plot_hist(im_srat_rgb, im_mits , coltitles, "Reef Scene, RGB Images", mean_rmse_rgb)
+#     plot_hist(im_srat_rgb, im_mits , coltitles, "Reef Scene, RGB Images", mean_MAE_rgb)
 def plot_hist(images, ref_im_ldr, names, suptitle):
     fig, axs = plt.subplots(1, len(images), figsize=(len(images) * 5, 5))  
     for i, im in enumerate(images):
@@ -445,13 +453,13 @@ def plot_histogram(mean_rgb, mean_spec, mean_shitty, color='blue', legend=["CIE 
     # create data 
     x = np.arange(3) 
     y1 = [mean_rgb, mean_spec, mean_shitty]
-    #y2 = [mean_rmse_rgb, mean_rmse_spec, mean_rmse_shitty]
+    #y2 = [mean_MAE_rgb, mean_MAE_spec, mean_MAE_shitty]
     width = 0.75
     # plot data in grouped manner of bar type 
     plt.bar(x, y1, width, color=color) 
     addlabels(x, y1)
     #plt.bar(x, y2, width, color='orange') 
-    plt.xticks(x, ['RGB (Ours)', 'Spectral Uplifting (Ours)', 'Naive Uplifting']) 
+    plt.xticks(x, ['RGB', 'Spectral Uplifting (Ours)', 'Naive Upsampling']) 
     #plt.xlabel("Techniques used for real-time rendering") 
     plt.ylabel(ylabel=ylabel) 
     plt.legend(legend) 
@@ -462,6 +470,13 @@ def main():
     ###################### REEF SCENE ######################
     reef_scene_plots()
 
+    # path_renders_mitsuba = 'C:/Users/Pedro/Desktop/Universidad/TFM/mitsuba-renders/reef_renders_osea/'
+    # path_renders_rgb = 'C:/Users/Pedro/Desktop/Universidad/TFM/OpenGL/sRAT-RT/resources/screenshots/screenshots_rgb/'
+    # path_renders_spectral = 'C:/Users/Pedro/Desktop/Universidad/TFM/OpenGL/sRAT-RT/resources/screenshots/screenshots_spec/'
+    # path_renders_shittyuplifting ='C:/Users/Pedro/Desktop/Universidad/TFM/OpenGL/sRAT-RT/resources/screenshots/screenshots_shittyuplift/'
+    # balls_scene_plots(path_renders_mitsuba, path_renders_rgb, 
+    #                   path_renders_spectral, path_renders_shittyuplifting,
+    #                   plot_suptitle='Reef scene, Jerlov I water, XYZ response Curves', our_vmax=30)
 
     ##################### BALLS SCENE 1 #####################
     path_renders_mitsuba = 'C:/Users/Pedro/Desktop/Universidad/TFM/mitsuba-renders/spheres_new/'

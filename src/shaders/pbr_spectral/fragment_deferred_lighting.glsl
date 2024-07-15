@@ -429,7 +429,7 @@ float pbr_material_shading(vec3 world_pos, float wavelength, float albedo)
 {
     // Decode values from the framebuffer textures
     vec4 _metallic_tex_sample = texture(framebuffer_tex2, fTexcoords).rgba;
-    float metallic =            _metallic_tex_sample.a;
+    float metallic =    texture(framebuffer_tex2, fTexcoords).a;//_metallic_tex_sample.a;
     float roughness =           texture(framebuffer_tex3, fTexcoords).a;
     float ao =                  texture(framebuffer_tex4, fTexcoords).r;
 
@@ -586,7 +586,7 @@ vec3 pbr_material_shading(vec3 world_pos)
 
     vec3 albedo =       pow(_albedo_tex_sample.rgb, vec3(2.2));
     float roughness =   _albedo_tex_sample.a;
-    float metallic =    _metallic_tex_sample.a;
+    float metallic =    texture(framebuffer_tex2, fTexcoords).a;//_metallic_tex_sample.a;
     vec3 N =            normalize(_metallic_tex_sample.xyz);
     vec3 ao =           texture(framebuffer_tex4, fTexcoords).rgb;
 
@@ -657,7 +657,7 @@ vec3 pbr_material_shading(vec3 world_pos)
         vec3 kS = F;
         // energy conservation, diff and spec can't be above 1.0
         vec3 kD = vec3(1.0) - kS;
-        kD *= 1.0 - metallic;
+        kD *= (1.0 - metallic);
         float n_dot_l = max(dot(N, L), 0.0);
 
         // Add to outgoing radiance Lo (we already multiplied by fresnel)

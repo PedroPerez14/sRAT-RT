@@ -1,7 +1,7 @@
 # sRAT-RT: Spectral Renderer for All-purpose Tasks, in Real Time
 
 A spectral real-time renderer based on OpenGL 4.5 for my Master's Thesis. This renderer performs spectral upsampling of reflectances, allowing to use RGB textures and assets to perform spectral rendering.
-The method we implemented is the one as in [Jakob and Hanika, 2019](https://rgl.epfl.ch/publications/Jakob2019Spectral).
+The method we implemented is the one as in [Jakob and Hanika, 2019](https://rgl.epfl.ch/publications/Jakob2019Spectral). <mark>You can read the thesis [here]!(https://github.com/PedroPerez14/sRAT-RT/blob/master/Thesis_techniques_for_real_time_spectral_rendering.pdf)</mark>
 
 This project is based on the CMakeLists.txt that can be found in the repo [imgui-glfw-glad](https://github.com/cmmw/imgui-glfw-glad-glm) as a base, with some modifications to also use [assimp](https://github.com/assimp/assimp).
 

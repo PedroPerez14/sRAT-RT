@@ -1,10 +1,7 @@
 build/
 build/*
-resources/objects
-resources/objects/*
 .vscode/
 .vscode/*
-resources/response_curves/
-resources/pbr_materials/
-resources/pbr_materials/*
+screenshot.png
 resources/utils_and_scripts/cmp_images.ipynb
+resources/objects/reef/reef_model.obj

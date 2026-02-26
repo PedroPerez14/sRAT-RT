@@ -23,6 +23,9 @@ The second command can also be replaced by a regular compilation in Visual Studi
 
 # How to use
 
+> [!WARNING]
+> You need to unizp the .rar file located in the resources/objects/reef folder in order to obtain the corresponding 3D model, otherwise execution will crash if that scene was selected.
+
 In order to execute, you need to execute the following commands in a terminal from the ```build``` folder (Assuming Debug configuration, if otherwise, change it for Release):
 ```
 .\Debug\sRAT-RT.exe -s ..\settings\example_settings.ini
